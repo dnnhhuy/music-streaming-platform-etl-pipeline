@@ -54,19 +54,24 @@ def write_to_hdfs(data, topic):
 
 
 def write_to_cassandra(data, topic):
-    data.write.format("org.apache.spark.sql.cassandra") \
-        .mode("append") \
+    data.writeStream \
+        .format("org.apache.spark.sql.cassandra") \
+        .outputMode("append") \
         .options(table=topic, keyspace="music_streaming") \
-        .save()
+        .option("checkpointLocation", "/tmp/checkpoint/{}".format(topic)) \
+        .start()
         
 if __name__ == '__main__':
     
     spark = SparkSession.builder \
         .master("spark://spark-master:7077") \
-        .config("spark.cassandra.connection.host", "cassandra:7000") \
         .config("spark.cores.max", 1) \
         .config("spark.executor.memory", "4g") \
         .config("spark.driver.memory", "4g") \
+        .config("spark.cassandra.connection.host", "cassandra") \
+        .config("spark.cassandra.connection.port","9042") \
+        .config("spark.cassandra.auth.username", "cassandra") \
+        .config("spark.cassandra.auth.password", "cassandra") \
         .appName("KafkaConsumer").getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
@@ -74,7 +79,11 @@ if __name__ == '__main__':
     # Process Stream Listen Events
     listen_events = readstream_from_kafka(spark, "listen_events")
     listen_events = transform_data(listen_events, "listen_events")
+    write_to_cassandra(listen_events, "listen_events")
     listen_events = write_to_hdfs(listen_events, "listen_events")
+    
+    
+    
     
     # Process Stream Auth Events
     auth_events = readstream_from_kafka(spark, "auth_events")
@@ -85,7 +94,6 @@ if __name__ == '__main__':
     page_view_events = readstream_from_kafka(spark, "page_view_events")
     page_view_events = transform_data(page_view_events, "page_view_events")
     page_view_events = write_to_hdfs(page_view_events, "page_view_events")
-    
     
     auth_events.start()
     listen_events.start()
