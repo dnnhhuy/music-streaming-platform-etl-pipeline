@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  cassandra:
+    image: bitnami/cassandra:4.0
+    platform: linux/amd64
+    container_name: cassandra
+    hostname: cassandra
+    ports:
+      - 7000:7000
+      - 9042:9042
+    volumes:
+      - ./:/data
+    networks:
+      - music_streaming_event_default
+
+networks:
+  music_streaming_event_default:
+    external: true
