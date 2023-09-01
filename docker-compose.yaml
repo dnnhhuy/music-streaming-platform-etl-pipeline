@@ -69,7 +69,6 @@ services:
       - 8080:8080
       - 7077:7077
       - 4040:4040
-
     volumes:
       - ./data:/data/
       - ./:/src/
