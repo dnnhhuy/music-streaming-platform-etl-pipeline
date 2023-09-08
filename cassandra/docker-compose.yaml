@@ -25,17 +25,6 @@ services:
       - music_streaming_event_default
     environment:
       - CASSANDRA_BROADCAST_ADDRESS=cassandra
-    
-  grafana:
-    image: grafana/grafana:10.1.1
-    container_name: grafana
-    hostname: grafana
-    ports:
-      - "3000:3000"
-    networks:
-      - music_streaming_event_default
-    
-
 
 networks:
   music_streaming_event_default:

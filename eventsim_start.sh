@@ -4,7 +4,7 @@ docker run -itd \
   --memory="5.5g" \
   --memory-swap="7g" \
   music_events \
-    -c "examples/example-config.json" \
+    -c "examples/alt-example-config.json" \
     --start-time "`date +"%Y-%m-%dT%H:%M:%S"`" \
     --end-time "`date -v +1d +"%Y-%m-%dT%H:%M:%S"`" \
     --nusers 1000000 \

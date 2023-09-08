@@ -85,5 +85,15 @@ CREATE TABLE IF NOT EXISTS music_streaming.page_view_events(
     "year" int,
     "hour" int,
     "week" int,
-    PRIMARY KEY(("year", "month", "week", "day", "hour"), "userId", "sessionId", "itemInSession")
+    PRIMARY KEY(("year", "month", "week", "day", "hour"), "u serId", "sessionId", "itemInSession")
 );
+
+
+
+CREATE TABLE IF NOT EXISTS music_streaming.stream_count (
+    stream_count text,
+    count double,
+    ts timestamp,
+    PRIMARY KEY(stream_count, ts)
+)
+WITH CLUSTERING ORDER BY (ts DESC);
