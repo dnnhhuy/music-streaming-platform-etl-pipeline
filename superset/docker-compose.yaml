@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  superset:
+      build:
+        context: ./
+        dockerfile: Dockerfile
+      container_name: superset
+      platform: linux/amd64
+      environment:
+        - ADMIN_USERNAME=admin
+        - ADMIN_EMAIL=admin@superset.com
+        - ADMIN_PASSWORD=admin
+      ports:
+        - '8089:8088'
+      networks:
+        - music_streaming_event_default
+
+networks:
+  music_streaming_event_default:
+    external: True

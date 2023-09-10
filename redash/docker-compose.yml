@@ -34,6 +34,8 @@ services:
     environment:
       <<: *redash-environment
       PYTHONUNBUFFERED: 0
+    networks:
+      - music_streaming_event_default
   scheduler:
     <<: *redash-service
     command: dev_scheduler
@@ -41,6 +43,8 @@ services:
       - server
     environment:
       <<: *redash-environment
+    networks:
+      - music_streaming_event_default
   worker:
     <<: *redash-service
     command: dev_worker
@@ -49,9 +53,13 @@ services:
     environment:
       <<: *redash-environment
       PYTHONUNBUFFERED: 0
+    networks:
+      - music_streaming_event_default
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    networks:
+      - music_streaming_event_default
   postgres:
     image: pgautoupgrade/pgautoupgrade:15-alpine3.8
     platform: linux/amd64
@@ -64,9 +72,18 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_HOST_AUTH_METHOD: "trust"
+    networks:
+      - music_streaming_event_default
   email:
     image: maildev/maildev
     ports:
       - "1080:1080"
       - "1025:1025"
     restart: unless-stopped
+    networks:
+      - music_streaming_event_default
+
+networks:
+  music_streaming_event_default:
+    external: True
+
