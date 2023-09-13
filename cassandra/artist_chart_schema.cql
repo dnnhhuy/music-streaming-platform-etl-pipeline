@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS music_streaming.artist_chart_minute (
     count double,
     year int,
     month int,
+    week int,
     day int,
     hour int,
     minute int,
