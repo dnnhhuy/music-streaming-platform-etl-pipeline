@@ -28,8 +28,10 @@ CREATE TABLE IF NOT EXISTS music_streaming.listen_events(
     "month" int,
     "year" int,
     "hour" int,
+    "minute" int,
     "week" int,
-    PRIMARY KEY(("year", "month", "week", "day", "hour"), "userId", "sessionId", "itemInSession")
+    "uuid" uuid, 
+    PRIMARY KEY("uuid")
 );
 
 CREATE TABLE IF NOT EXISTS music_streaming.auth_events(
@@ -53,8 +55,10 @@ CREATE TABLE IF NOT EXISTS music_streaming.auth_events(
     "month" int,
     "year" int,
     "hour" int,
+    "minute" int,
     "week" int,
-    PRIMARY KEY(("year", "month", "week", "day", "hour"), "userId", "sessionId", "itemInSession")
+    "uuid" uuid, 
+    PRIMARY KEY("uuid")
 );
 
 CREATE TABLE IF NOT EXISTS music_streaming.page_view_events(
@@ -84,16 +88,8 @@ CREATE TABLE IF NOT EXISTS music_streaming.page_view_events(
     "month" int,
     "year" int,
     "hour" int,
+    "minute" int,
     "week" int,
-    PRIMARY KEY(("year", "month", "week", "day", "hour"), "u serId", "sessionId", "itemInSession")
+    "uuid" uuid
+    PRIMARY KEY("uuid")
 );
-
-
-
-CREATE TABLE IF NOT EXISTS music_streaming.stream_count (
-    stream_count text,
-    count double,
-    ts timestamp,
-    PRIMARY KEY(stream_count, ts)
-)
-WITH CLUSTERING ORDER BY (ts DESC);

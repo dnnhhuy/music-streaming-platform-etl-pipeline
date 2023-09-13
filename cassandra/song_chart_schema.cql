@@ -3,7 +3,9 @@ WITH REPLICATION = {
     'class': 'SimpleStrategy',
     'replication_factor': 1
 };
-CREATE TABLE IF NOT EXISTS music_streaming.listen_count_minute (
+
+CREATE TABLE IF NOT EXISTS music_streaming.song_chart_minute (
+    song text,
     count double,
     year int,
     month int,
@@ -11,6 +13,6 @@ CREATE TABLE IF NOT EXISTS music_streaming.listen_count_minute (
     hour int,
     minute int,
     ingest_ts timestamp,
-    PRIMARY KEY ((year, month, day, hour, minute), ingest_ts)
+    PRIMARY KEY ((song), ingest_ts)
 )
 WITH CLUSTERING ORDER BY (ingest_ts DESC);

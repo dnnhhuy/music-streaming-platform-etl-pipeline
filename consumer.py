@@ -23,26 +23,28 @@ def readstream_from_kafka(spark, topic):
         .load()
     return data
 
-def transform_data(data, topic):
+# def transform_data(data, topic):
     
-    convertudf = func.udf(lambda x: fix_string(x), StringType())
+#     convertudf = func.udf(lambda x: fix_string(x), StringType())
     
-    transformed_data = data.selectExpr("CAST(value as String)") \
-        .select(func.from_json(func.col("value"), schema[topic]).alias("value")) \
-        .select(func.col("value.*")) \
-        .withColumn("ts", (func.col("ts")/1000).cast("timestamp")) \
-        .withColumn("registration", (func.col("registration")/1000).cast("timestamp")) \
-        .withColumn("day", func.dayofmonth(func.col("ts"))) \
-        .withColumn("month", func.month(func.col("ts"))) \
-        .withColumn("year", func.year(func.col("ts"))) \
-        .withColumn("hour", func.hour(func.col("ts"))) \
-        .withColumn("week", func.weekofyear(func.col("ts")))
+#     transformed_data = data.selectExpr("CAST(value as String)") \
+#         .select(func.from_json(func.col("value"), schema[topic]).alias("value")) \
+#         .select(func.col("value.*")) \
+#         .withColumn("ts", (func.col("ts")/1000).cast("timestamp")) \
+#         .withColumn("registration", (func.col("registration")/1000).cast("timestamp")) \
+#         .withColumn("day", func.dayofmonth(func.col("ts"))) \
+#         .withColumn("month", func.month(func.col("ts"))) \
+#         .withColumn("year", func.year(func.col("ts"))) \
+#         .withColumn("hour", func.hour(func.col("ts"))) \
+#         .withColumn("week", func.weekofyear(func.col("ts"))) \
+#         .withColumn("minute", func.minute(func.col("ts"))) \
+#         .withColumn("uuid", func.expr("uuid()"))
     
-    if topic == "listen_events" or topic == "page_view_events":
-        transformed_data = transformed_data.withColumn("song", convertudf(func.col("song"))) \
-                                            .withColumn("artist", convertudf(func.col("artist")))
+#     if topic == "listen_events" or topic == "page_view_events":
+#         transformed_data = transformed_data.withColumn("song", convertudf(func.col("song"))) \
+#                                             .withColumn("artist", convertudf(func.col("artist")))
     
-    return transformed_data
+#     return transformed_data
 
 def transform_song_chart(data, topic, granularity):
     convertudf = func.udf(lambda x: fix_string(x), StringType())
@@ -52,108 +54,75 @@ def transform_song_chart(data, topic, granularity):
         .select(func.col("value.*")) \
         .withColumn("ts", (func.col("ts")/1000).cast("timestamp")) \
         .withWatermark("ts", "0 seconds") \
-        
+        .groupBy("song", func.window("ts", "1 minute", "1 minute")) \
+        .count() \
+        .withColumn("ingest_ts", func.from_utc_timestamp(func.current_timestamp(), "+07:00")) \
+        .withColumn("year", func.year(func.col("ingest_ts"))) \
+        .withColumn("month", func.month(func.col("ingest_ts"))) \
+        .withColumn("day", func.dayofmonth(func.col("ingest_ts"))) \
+        .withColumn("hour", func.hour(func.col("ingest_ts"))) \
+        .withColumn("minute", func.minute(func.col("ingest_ts"))) \
     
-    if granularity == "minute":
-        transformed_data = transformed_data \
-            .withColumn("year", func.year(func.col("ts"))) \
-            .withColumn("month", func.month(func.col("ts"))) \
-            .withColumn("day", func.dayofmonth(func.col("ts"))) \
-            .withColumn("hour", func.hour(func.col("ts"))) \
-            .withColumn("minute", func.minute(func.col("ts"))) \
-            .groupBy("song", "year", "month", "day", "hour", "minute", func.window("ts", "1 minute", "1 minute")) \
-            .count() \
-            .select("song", "year", "month", "day", "hour", "minute", "count")
-    elif granularity == "hour":
-        transformed_data = transformed_data \
-            .withColumn("year", func.year(func.col("ts"))) \
-            .withColumn("month", func.month(func.col("ts"))) \
-            .withColumn("day", func.dayofmonth(func.col("ts"))) \
-            .withColumn("hour", func.hour(func.col("ts"))) \
-            .groupBy("song", "year", "month", "day", "hour") \
-            .count()
-    elif granularity == "day":
-        transformed_data = transformed_data \
-            .withColumn("year", func.year(func.col("ts"))) \
-            .withColumn("month", func.month(func.col("ts"))) \
-            .withColumn("day", func.dayofmonth(func.col("ts"))) \
-            .groupBy("song", "year", "month", "day") \
-            .count()
-    elif granularity == "month":
-        transformed_data = transformed_data \
-            .withColumn("year", func.year(func.col("ts"))) \
-            .withColumn("month", func.month(func.col("ts"))) \
-            .groupBy("song", "year", "month") \
-            .count()
-    elif granularity == "week":
-        transformed_data = transformed_data \
-            .withColumn("year", func.year(func.col("ts"))) \
-            .withColumn("week", func.weekofyear(func.col("ts"))) \
-            .groupBy("song", "year", "week") \
-            .count()
-    elif granularity == "year":
-        transformed_data = transformed_data \
-            .withColumn("year", func.year(func.col("ts"))) \
-            .groupBy("song", "year") \
-            .count()
+    if granularity == "week":
+        transformed_data = transformed_data.withColumn("week", func.weekofyear("ingest_ts")) \
+            .select("song", "year", "week", "month", "day", "hour", "minute", "ingest_ts", "count") 
+    else:
+         transformed_data = transformed_data \
+            .select("song", "year", "month", "day", "hour", "minute", "ingest_ts", "count") 
         
-    if topic == "listen_events" or topic == "page_view_events":
-        transformed_data = transformed_data.withColumn("song", convertudf(func.col("song")))
+    transformed_data = transformed_data.withColumn("song", convertudf(func.col("song")))
         
     return transformed_data
 
-def transform_listen_count(data, topic, granularity):      
-    
+def transform_artist_chart(data, topic, granularity):
+    convertudf = func.udf(lambda x: fix_string(x), StringType())
+        
     transformed_data = data.selectExpr("CAST(value as String)") \
         .select(func.from_json(func.col("value"), schema[topic]).alias("value")) \
         .select(func.col("value.*")) \
         .withColumn("ts", (func.col("ts")/1000).cast("timestamp")) \
-        .withWatermark("ts", "0 seconds")
-        
-        
-    if granularity == "minute":
-        transformed_data = transformed_data \
-            .groupBy(func.window("ts", "1 minute", "1 minute")) \
-            .agg(func.count("*").alias("count")) \
-            .withColumn("listen_count", func.lit("listen_count")) \
-            .withColumn("ts", func.current_timestamp()) \
-            .select("listen_count", "count", "ts")
-    elif granularity == "hour":
-        transformed_data = transformed_data \
-            .groupBy(func.window("ts", "1 hour", "1 hour")) \
-            .agg(func.count("*").alias("count")) \
-            .withColumn("listen_count", func.lit("listen_count")) \
-            .withColumn("ts", func.current_timestamp()) \
-            .select("listen_count", "count", "ts")
-    elif granularity == "day":
-        transformed_data = transformed_data \
-            .groupBy(func.window("ts", "1 day", "1 day")) \
-            .agg(func.count("*").alias("count")) \
-            .withColumn("listen_count", func.lit("listen_count")) \
-            .withColumn("ts", func.current_timestamp()) \
-            .select("listen_count", "count", "ts")
-    elif granularity == "month":
-        transformed_data = transformed_data \
-            .groupBy(func.window("ts", "1 month", "1 month")) \
-            .agg(func.count("*").alias("count")) \
-            .withColumn("listen_count", func.lit("listen_count")) \
-            .withColumn("ts", func.current_timestamp()) \
-            .select("listen_count", "count", "ts")
-    elif granularity == "week":
-        transformed_data = transformed_data \
-            .groupBy(func.window("ts", "1 week", "1 week")) \
-            .agg(func.count("*").alias("count")) \
-            .withColumn("listen_count", func.lit("listen_count")) \
-            .withColumn("ts", func.current_timestamp()) \
-            .select("listen_count", "count", "ts")
-    elif granularity == "year":
-        transformed_data = transformed_data \
-            .groupBy(func.window("ts", "1 year", "1 year")) \
-            .agg(func.count("*").alias("count")) \
-            .withColumn("listen_count", func.lit("listen_count")) \
-            .withColumn("ts", func.current_timestamp()) \
-            .select("listen_count", "count", "ts")
+        .withWatermark("ts", "0 seconds") \
+        .groupBy("artist", func.window("ts", "1 minute", "1 minute")) \
+        .count() \
+        .withColumn("ingest_ts", func.from_utc_timestamp(func.current_timestamp(), "+07:00")) \
+        .withColumn("year", func.year(func.col("ingest_ts"))) \
+        .withColumn("month", func.month(func.col("ingest_ts"))) \
+        .withColumn("day", func.dayofmonth(func.col("ingest_ts"))) \
+        .withColumn("hour", func.hour(func.col("ingest_ts"))) \
+        .withColumn("minute", func.minute(func.col("ingest_ts"))) \
+    
+    if granularity == "week":
+        transformed_data = transformed_data.withColumn("week", func.weekofyear("ingest_ts")) \
+            .select("artist", "year", "week", "month", "day", "hour", "minute", "ingest_ts", "count") 
+    else:
+         transformed_data = transformed_data \
+            .select("artist", "year", "month", "day", "hour", "minute", "ingest_ts", "count") 
+    
+    transformed_data = transformed_data.withColumn("artist", convertudf(func.col("artist")))
+    return transformed_data
 
+
+def transform_listen_count(data, topic, granularity):       
+    transformed_data = data.selectExpr("CAST(value as String)") \
+        .select(func.from_json(func.col("value"), schema[topic]).alias("value")) \
+        .select(func.col("value.*")) \
+        .withColumn("ts", (func.col("ts")/1000).cast("timestamp")) \
+        .withWatermark("ts", "0 seconds") \
+        .groupBy(func.window("ts", "1 minute", "1 minute")) \
+        .count() \
+        .withColumn("ingest_ts", func.from_utc_timestamp(func.current_timestamp(), "+07:00")) \
+        .withColumn("year", func.year(func.col("ingest_ts"))) \
+        .withColumn("month", func.month(func.col("ingest_ts"))) \
+        .withColumn("day", func.dayofmonth(func.col("ingest_ts"))) \
+        .withColumn("hour", func.hour(func.col("ingest_ts"))) \
+        .withColumn("minute", func.minute(func.col("ingest_ts"))) 
+        
+    if granularity == "week":
+        transformed_data = transformed_data.withColumn("week", func.weekofyear("ingest_ts")) \
+            .select("year", "week", "month", "day", "hour", "minute", "ingest_ts", "count") 
+    else:
+         transformed_data = transformed_data \
+            .select("year", "month", "day", "hour", "minute", "ingest_ts", "count") 
     return transformed_data
 
 
@@ -167,24 +136,25 @@ def write_to_hdfs(data, topic, processingTime):
     return stream
         
 
-
+    
 def write_to_cassandra(data, table, processingTime):
     stream = data.writeStream \
         .format("org.apache.spark.sql.cassandra") \
-        .outputMode("append") \
+        .option("checkpointLocation", "/tmp/testCheckpoint/{}".format(table)) \
         .options(table=table, keyspace="music_streaming") \
-        .option("checkpointLocation", "/tmp/checkpoint/{}".format(table)) \
-        .trigger(processingTime=processingTime)
+        .trigger(processingTime=processingTime) \
+        .outputMode("append") \
         
     return stream
 
+    
 def write_to_console(data, processingTime):
             
     stream = data.writeStream \
         .format("console") \
         .outputMode("append") \
+        .option("truncate", False) \
         .trigger(processingTime=processingTime)
-
     
     return stream 
 
@@ -216,10 +186,18 @@ if __name__ == '__main__':
     
     # Process Stream Listen Events
     listen_events = readstream_from_kafka(spark, "listen_events")
-    # listen_events = transform_data(listen_events, "listen_events")
-    listen_count = transform_listen_count(listen_events, "listen_events", "minute")
-    # song_charts = transform_song_chart(listen_events, "listen_events", "minute")
-    listen_count = write_to_cassandra(listen_count, "listen_count", "1 minute")
+    # listen_events = tr(listen_events, "listen_events")
+    # listen_events = write_to_cassandra(listen_events, "listen_events", "0 seconds")
+    
+    listen_count_minute = transform_listen_count(listen_events, "listen_events", "minute")
+    listen_count_minute = write_to_cassandra(listen_count_minute, "listen_count_minute", "1 minute")
+
+    song_chart_minute = transform_song_chart(listen_events, "listen_events", "minute")
+    song_chart_minute = write_to_cassandra(song_chart_minute, "song_chart_minute", "1 minute")
+
+    artist_chart_minute = transform_artist_chart(listen_events, "listen_events", "minute")
+    artist_chart_minute = write_to_cassandra(artist_chart_minute, "artist_chart_minute", "1 minute")
+    
     
     # Process Stream Auth Events
     # auth_events = readstream_from_kafka(spark, "auth_events")
@@ -233,9 +211,9 @@ if __name__ == '__main__':
     # page_view_events_cassandra = write_to_cassandra(page_view_events, "page_view_events")
     # page_view_events_hdfs = write_to_hdfs(page_view_events, "page_view_events")
     
-    # listen_events_hdfs.start()
-    listen_count.start()
-    
+    listen_count_minute.start()
+    song_chart_minute.start()
+    artist_chart_minute.start()
     # auth_events_cassandra.start()
     # auth_events_hdfs.start()
     

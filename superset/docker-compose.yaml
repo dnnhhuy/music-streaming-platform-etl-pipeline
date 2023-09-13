@@ -2,19 +2,31 @@ version: '3'
 
 services:
   superset:
-      build:
-        context: ./
-        dockerfile: Dockerfile
-      container_name: superset
-      platform: linux/amd64
-      environment:
-        - ADMIN_USERNAME=admin
-        - ADMIN_EMAIL=admin@superset.com
-        - ADMIN_PASSWORD=admin
-      ports:
-        - '8089:8088'
-      networks:
-        - music_streaming_event_default
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: superset
+    platform: linux/amd64
+    environment:
+      - ADMIN_USERNAME=admin
+      - ADMIN_EMAIL=admin@superset.com
+      - ADMIN_PASSWORD=admin
+    ports:
+      - '8089:8088'
+    networks:
+      - music_streaming_event_default
+  
+  presto:
+    image: ahanaio/prestodb-sandbox
+    container_name: presto
+    platform: linux/amd64
+    hostname: presto
+    ports:
+    - 8082:8080
+    networks:
+      - music_streaming_event_default
+    volumes:
+      - ./:/opt/presto-server/etc/catalog/
 
 networks:
   music_streaming_event_default:
