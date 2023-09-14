@@ -15,6 +15,8 @@ services:
       - '8089:8088'
     networks:
       - music_streaming_event_default
+    volumes:
+      - ./data:/app/superset_home/
   
   presto:
     image: ahanaio/prestodb-sandbox

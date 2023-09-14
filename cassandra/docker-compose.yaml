@@ -4,6 +4,8 @@ services:
   cassandra:
     image: cassandra:4.0
     platform: linux/amd64
+    ulimits:
+        memlock: -1
     container_name: cassandra
     hostname: cassandra
     ports:

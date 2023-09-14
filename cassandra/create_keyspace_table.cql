@@ -23,15 +23,7 @@ CREATE TABLE IF NOT EXISTS music_streaming.listen_events(
     "lastName" text,
     "firstName" text,
     "gender" text,
-    "registration" timestamp,
-    "day" int,
-    "month" int,
-    "year" int,
-    "hour" int,
-    "minute" int,
-    "week" int,
-    "uuid" uuid, 
-    PRIMARY KEY("uuid")
+    "registration" timestamp
 );
 
 CREATE TABLE IF NOT EXISTS music_streaming.auth_events(
@@ -50,15 +42,7 @@ CREATE TABLE IF NOT EXISTS music_streaming.auth_events(
     "firstName" text,
     "gender" text,
     "registration" timestamp,
-    "success" boolean,
-    "day" int,
-    "month" int,
-    "year" int,
-    "hour" int,
-    "minute" int,
-    "week" int,
-    "uuid" uuid, 
-    PRIMARY KEY("uuid")
+    "success" boolean
 );
 
 CREATE TABLE IF NOT EXISTS music_streaming.page_view_events(
@@ -83,13 +67,5 @@ CREATE TABLE IF NOT EXISTS music_streaming.page_view_events(
     "registration" timestamp,
     "artist" text,
     "song" text,
-    "duration" double,
-    "day" int,
-    "month" int,
-    "year" int,
-    "hour" int,
-    "minute" int,
-    "week" int,
-    "uuid" uuid
-    PRIMARY KEY("uuid")
+    "duration" double
 );

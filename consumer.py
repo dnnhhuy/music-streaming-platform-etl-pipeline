@@ -111,6 +111,26 @@ def transform_listen_count(data, topic):
    
     return transformed_data
 
+def transform_user_activity_count(data, topic):
+    
+    transformed_data = data.selectExpr("CAST(value as String)") \
+        .select(func.from_json(func.col("value"), schema[topic]).alias("value")) \
+        .select(func.col("value.*")) \
+        .withColumn("ts", (func.col("ts")/1000).cast("timestamp")) \
+        .withWatermark("ts", "0 seconds") \
+        .groupBy("state", func.window("ts", "1 minute", "1 minute")) \
+        .count() \
+        .withColumn("ingest_ts", func.from_utc_timestamp(func.current_timestamp(), "+07:00")) \
+        .withColumn("year", func.year(func.col("ingest_ts"))) \
+        .withColumn("month", func.month(func.col("ingest_ts"))) \
+        .withColumn("week", func.weekofyear(func.col("ingest_ts"))) \
+        .withColumn("day", func.dayofmonth(func.col("ingest_ts"))) \
+        .withColumn("hour", func.hour(func.col("ingest_ts"))) \
+        .withColumn("minute", func.minute(func.col("ingest_ts"))) \
+        .withColumn("state", func.concat(func.lit("US-"), func.col("state"))) \
+        .select("state", "year", "week", "month", "day", "hour", "minute", "ingest_ts", "count") 
+   
+    return transformed_data
 
 def write_to_hdfs(data, topic, processingTime):    
     stream = data.writeStream \
@@ -185,26 +205,27 @@ if __name__ == '__main__':
     artist_chart_minute = write_to_cassandra(artist_chart_minute, "artist_chart_minute", "1 minute")
     
     
+    
     # Process Stream Auth Events
     # auth_events = readstream_from_kafka(spark, "auth_events")
     # auth_events = transform_data(auth_events, "auth_events")
     # auth_events_cassandra = write_to_cassandra(auth_events, "auth_events")
     # auth_events_hdfs = write_to_hdfs(auth_events, "auth_events")
     
-    # # Process Stream Page View Events
-    # page_view_events = readstream_from_kafka(spark, "page_view_events")
+    # Process Stream Page View Events
+    page_view_events = readstream_from_kafka(spark, "page_view_events")
     # page_view_events = transform_data(page_view_events, "page_view_events")
     # page_view_events_cassandra = write_to_cassandra(page_view_events, "page_view_events")
     # page_view_events_hdfs = write_to_hdfs(page_view_events, "page_view_events")
+    user_activity_minute = transform_user_activity_count(page_view_events, "page_view_events")
+    user_activity_minute = write_to_cassandra(user_activity_minute, "user_activity_minute", "1 minute")
+    
     
     listen_count_minute.start()
     song_chart_minute.start()
     artist_chart_minute.start()
-    # auth_events_cassandra.start()
-    # auth_events_hdfs.start()
     
-    # page_view_events_cassandra.start()
-    # page_view_events_hdfs.start()
+    user_activity_minute.start()
     
     spark.streams.awaitAnyTermination()
 
