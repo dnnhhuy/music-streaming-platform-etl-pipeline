@@ -16,7 +16,7 @@ services:
     networks:
       - music_streaming_event_default
     volumes:
-      - ./data:/app/superset_home/
+      - ./dashboard_data/:/app/superset_home/
   
   presto:
     image: ahanaio/prestodb-sandbox

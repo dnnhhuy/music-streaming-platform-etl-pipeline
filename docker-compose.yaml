@@ -60,6 +60,7 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
+    restart: always
 
   spark-master:
     image: bitnami/spark:3.3

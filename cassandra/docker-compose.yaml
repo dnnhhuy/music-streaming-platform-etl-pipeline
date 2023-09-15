@@ -4,8 +4,6 @@ services:
   cassandra:
     image: cassandra:4.0
     platform: linux/amd64
-    ulimits:
-        memlock: -1
     container_name: cassandra
     hostname: cassandra
     ports:
@@ -19,15 +17,29 @@ services:
       interval: 5s
       timeout: 5s
       retries: 60
-    working_dir: 
-     "/cassandra"
     volumes:
-      - ./:/cassandra
-    networks:
-      - music_streaming_event_default
+      - ./data:/var/lib/cassandra
     environment:
       - CASSANDRA_BROADCAST_ADDRESS=cassandra
-
+      - MAX_HEAP_SIZE=256M
+      - HEAP_NEWSIZE=128M
+      
+    restart: always
+    networks:
+      - music_streaming_event_default
+  cassandra-load-keyspace:
+    container_name: cassandra-load-keyspace
+    image: cassandra:4.0
+    platform: linux/amd64
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    working_dir: /cassandra
+    volumes:
+      - ./scripts/:/cassandra
+    command: /bin/bash -c "echo loading cassandra keyspace && sh ./initialize_schema.sh"
+    networks:
+      - music_streaming_event_default
 networks:
   music_streaming_event_default:
-    external: true
+    external: True
