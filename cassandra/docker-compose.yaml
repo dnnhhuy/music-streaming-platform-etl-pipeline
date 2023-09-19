@@ -17,7 +17,7 @@ services:
       timeout: 5s
       retries: 60
     volumes:
-      - cassandra-data:/var/lib/cassandra
+      - cassandra-data-1:/var/lib/cassandra
     environment: 
       CASSANDRA_BROADCAST_ADDRESS: cassandra-1
       CASSANDRA_SEEDS: "cassandra-1,cassandra-2"
@@ -69,5 +69,5 @@ networks:
     external: True
   
 volumes:
-  cassandra-data:
+  cassandra-data-1:
   cassandra-data-2:

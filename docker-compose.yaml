@@ -71,8 +71,7 @@ services:
       - 7077:7077
       - 4040:4040
     volumes:
-      - ./data:/data/
-      - ./:/src/
+      - ./spark/:/src/
 
   spark-worker-1:
     image: bitnami/spark:3.3
@@ -88,7 +87,6 @@ services:
       SPARK_MASTER_URL: spark://spark-master:7077
 
     volumes:
-      - ./data:/data/
-      - ./:/src/
+      - ./spark/:/src/
 
 
