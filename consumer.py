@@ -170,7 +170,7 @@ def initialize_spark():
     conf.set("spark.cores.max", 2)
     conf.set("spark.executor.memory", "4g")
     conf.set("spark.driver.memory", "4g")
-    conf.set("spark.cassandra.connection.host", "cassandra")
+    conf.set("spark.cassandra.connection.host", "cassandra-1")
     conf.set("spark.cassandra.connection.port","9042")
     conf.set("spark.cassandra.auth.username", "cassandra")
     conf.set("spark.cassandra.auth.password", "cassandra")

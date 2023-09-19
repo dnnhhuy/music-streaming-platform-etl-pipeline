@@ -1,7 +1,7 @@
 CREATE KEYSPACE IF NOT EXISTS music_streaming 
 WITH REPLICATION = {
     'class': 'SimpleStrategy',
-    'replication_factor': 1
+    'replication_factor': 2
 };
 
 CREATE TABLE IF NOT EXISTS music_streaming.song_chart_minute (

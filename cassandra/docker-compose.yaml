@@ -1,11 +1,10 @@
 version: "3"
 
 services:
-  cassandra:
-    image: cassandra:4.0
-    platform: linux/amd64
-    container_name: cassandra
-    hostname: cassandra
+  cassandra-1:
+    image: cassandra:4.0.1
+    container_name: cassandra-1
+    hostname: cassandra-1
     ports:
       - 7000:7000
       - 9042:9042
@@ -18,21 +17,44 @@ services:
       timeout: 5s
       retries: 60
     volumes:
-      - ./data:/var/lib/cassandra
-    environment:
-      - CASSANDRA_BROADCAST_ADDRESS=cassandra
-      - MAX_HEAP_SIZE=256M
-      - HEAP_NEWSIZE=128M
-      
-    restart: always
+      - cassandra-data:/var/lib/cassandra
+    environment: 
+      CASSANDRA_BROADCAST_ADDRESS: cassandra-1
+      CASSANDRA_SEEDS: "cassandra-1,cassandra-2"
+      MAX_HEAP_SIZE: 256M
+      HEAP_NEWSIZE: 128M
     networks:
       - music_streaming_event_default
+  
+  cassandra-2:
+    image: cassandra:4.0.1
+    container_name: cassandra-2
+    hostname: cassandra-2
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    volumes:
+      - cassandra-data-2:/var/lib/cassandra
+    environment: 
+      CASSANDRA_BROADCAST_ADDRESS: cassandra-2
+      CASSANDRA_SEEDS: "cassandra-1,cassandra-2"
+      MAX_HEAP_SIZE: 256M
+      HEAP_NEWSIZE: 128M
+    depends_on:
+      - cassandra-1
+    networks:
+      - music_streaming_event_default
+    
+
   cassandra-load-keyspace:
     container_name: cassandra-load-keyspace
-    image: cassandra:4.0
-    platform: linux/amd64
+    image: cassandra:4.0.1
     depends_on:
-      cassandra:
+      cassandra-1:
+        condition: service_healthy
+      cassandra-2:
         condition: service_healthy
     working_dir: /cassandra
     volumes:
@@ -40,6 +62,12 @@ services:
     command: /bin/bash -c "echo loading cassandra keyspace && sh ./initialize_schema.sh"
     networks:
       - music_streaming_event_default
+
+
 networks:
   music_streaming_event_default:
     external: True
+  
+volumes:
+  cassandra-data:
+  cassandra-data-2:
