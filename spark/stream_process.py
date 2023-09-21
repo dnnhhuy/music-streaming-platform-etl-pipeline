@@ -23,28 +23,21 @@ def readstream_from_kafka(spark, topic):
         .load()
     return data
 
-# def transform_data(data, topic):
+def transform_data(data, topic):
     
-#     convertudf = func.udf(lambda x: fix_string(x), StringType())
+    convertudf = func.udf(lambda x: fix_string(x), StringType())
     
-#     transformed_data = data.selectExpr("CAST(value as String)") \
-#         .select(func.from_json(func.col("value"), schema[topic]).alias("value")) \
-#         .select(func.col("value.*")) \
-#         .withColumn("ts", (func.col("ts")/1000).cast("timestamp")) \
-#         .withColumn("registration", (func.col("registration")/1000).cast("timestamp")) \
-#         .withColumn("day", func.dayofmonth(func.col("ts"))) \
-#         .withColumn("month", func.month(func.col("ts"))) \
-#         .withColumn("year", func.year(func.col("ts"))) \
-#         .withColumn("hour", func.hour(func.col("ts"))) \
-#         .withColumn("week", func.weekofyear(func.col("ts"))) \
-#         .withColumn("minute", func.minute(func.col("ts"))) \
-#         .withColumn("uuid", func.expr("uuid()"))
+    transformed_data = data.selectExpr("CAST(value as String)") \
+        .select(func.from_json(func.col("value"), schema[topic]).alias("value")) \
+        .select(func.col("value.*")) \
+        .withColumn("ts", (func.col("ts")/1000).cast("timestamp")) \
+        .withColumn("registration", (func.col("registration")/1000).cast("timestamp"))
     
-#     if topic == "listen_events" or topic == "page_view_events":
-#         transformed_data = transformed_data.withColumn("song", convertudf(func.col("song"))) \
-#                                             .withColumn("artist", convertudf(func.col("artist")))
+    if topic == "listen_events" or topic == "page_view_events":
+        transformed_data = transformed_data.withColumn("song", convertudf(func.col("song"))) \
+                                            .withColumn("artist", convertudf(func.col("artist")))
     
-#     return transformed_data
+    return transformed_data
 
 def transform_song_chart(data, topic):
     convertudf = func.udf(lambda x: fix_string(x), StringType())
@@ -146,8 +139,8 @@ def write_to_hdfs(data, topic, processingTime):
     stream = data.writeStream \
         .format("parquet") \
         .outputMode("append") \
-        .option("path", "hdfs://namenode:8020/data/{}".format(topic)) \
-        .option("checkpointLocation", "hdfs://namenode:8020/checkpoint/{}".format(topic)) \
+        .option("path", "hdfs://namenode:9000/data/{}".format(topic)) \
+        .option("checkpointLocation", "hdfs://namenode:9000/checkpoint/{}".format(topic)) \
         .trigger(processingTime=processingTime)
     return stream
         
@@ -156,7 +149,7 @@ def write_to_hdfs(data, topic, processingTime):
 def write_to_cassandra(data, table, processingTime):
     stream = data.writeStream \
         .format("org.apache.spark.sql.cassandra") \
-        .option("checkpointLocation", "/tmp/testCheckpoint1/{}".format(table)) \
+        .option("checkpointLocation", "/tmp/chechpint/{}".format(table)) \
         .options(table=table, keyspace="music_streaming") \
         .trigger(processingTime=processingTime) \
         .outputMode("append") \
@@ -202,8 +195,8 @@ if __name__ == '__main__':
     
     # Process Stream Listen Events
     listen_events = readstream_from_kafka(spark, "listen_events")
-    # listen_events = tr(listen_events, "listen_events")
-    # listen_events = write_to_cassandra(listen_events, "listen_events", "0 seconds")
+    listen_events_hdfs = transform_data(listen_events, "listen_events")
+    listen_events_hdfs = write_to_hdfs(listen_events_hdfs, "listen_events", "1 minute")
     
     listen_count_minute = transform_listen_count(listen_events, "listen_events")
     listen_count_minute = write_to_cassandra(listen_count_minute, "listen_count_minute", "1 minute")
@@ -218,17 +211,17 @@ if __name__ == '__main__':
     
     # Process Stream Auth Events
     auth_events = readstream_from_kafka(spark, "auth_events")
-    # auth_events = transform_data(auth_events, "auth_events")
-    # auth_events_cassandra = write_to_cassandra(auth_events, "auth_events")
-    # auth_events_hdfs = write_to_hdfs(auth_events, "auth_events")
+    auth_events_hdfs = transform_data(auth_events, "auth_events")
+    auth_events_hdfs = write_to_hdfs(auth_events_hdfs, "auth_events", "1 minute")
+
     user_auth = transform_user_data(auth_events, topic="auth_events")
     user_auth = write_to_cassandra(user_auth, "user_auth", "1 minute")
 
     # Process Stream Page View Events
     page_view_events = readstream_from_kafka(spark, "page_view_events")
-    # page_view_events = transform_data(page_view_events, "page_view_events")
-    # page_view_events_cassandra = write_to_cassandra(page_view_events, "page_view_events")
-    # page_view_events_hdfs = write_to_hdfs(page_view_events, "page_view_events")
+    page_view_events_hdfs = transform_data(page_view_events, "page_view_events")
+    page_view_events_hdfs = write_to_hdfs(page_view_events_hdfs, "page_view_events", "1 minute")
+   
     user_activity_minute = transform_user_activity_count(page_view_events, "page_view_events")
     user_activity_minute = write_to_cassandra(user_activity_minute, "user_activity_minute", "1 minute")
     
