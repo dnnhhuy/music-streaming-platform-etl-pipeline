@@ -49,7 +49,7 @@ def transform_song_chart(data, topic):
         .withWatermark("ts", "0 seconds") \
         .groupBy("song", func.window("ts", "1 minute", "1 minute")) \
         .count() \
-        .withColumn("ingest_ts", func.from_utc_timestamp(func.current_timestamp(), "+07:00")) \
+        .withColumn("ingest_ts", func.col("window.start")) \
         .withColumn("year", func.year(func.col("ingest_ts"))) \
         .withColumn("month", func.month(func.col("ingest_ts"))) \
         .withColumn("week", func.weekofyear(func.col("ingest_ts"))) \
@@ -72,7 +72,7 @@ def transform_artist_chart(data, topic="listen_events"):
         .withWatermark("ts", "0 seconds") \
         .groupBy("artist", func.window("ts", "1 minute", "1 minute")) \
         .count() \
-        .withColumn("ingest_ts", func.from_utc_timestamp(func.current_timestamp(), "+07:00")) \
+        .withColumn("ingest_ts", func.col("window.start")) \
         .withColumn("year", func.year(func.col("ingest_ts"))) \
         .withColumn("month", func.month(func.col("ingest_ts"))) \
         .withColumn("week", func.weekofyear(func.col("ingest_ts"))) \
@@ -93,7 +93,7 @@ def transform_listen_count(data, topic="listen_events"):
         .withWatermark("ts", "0 seconds") \
         .groupBy(func.window("ts", "1 minute", "1 minute")) \
         .count() \
-        .withColumn("ingest_ts", func.from_utc_timestamp(func.current_timestamp(), "+07:00")) \
+        .withColumn("ingest_ts", func.col("window.start")) \
         .withColumn("year", func.year(func.col("ingest_ts"))) \
         .withColumn("month", func.month(func.col("ingest_ts"))) \
         .withColumn("week", func.weekofyear(func.col("ingest_ts"))) \
@@ -113,7 +113,7 @@ def transform_user_activity_count(data, topic="page_view_events"):
         .withWatermark("ts", "0 seconds") \
         .groupBy("state", func.window("ts", "1 minute", "1 minute")) \
         .count() \
-        .withColumn("ingest_ts", func.from_utc_timestamp(func.current_timestamp(), "+07:00")) \
+        .withColumn("ingest_ts", func.col("window.start")) \
         .withColumn("year", func.year(func.col("ingest_ts"))) \
         .withColumn("month", func.month(func.col("ingest_ts"))) \
         .withColumn("week", func.weekofyear(func.col("ingest_ts"))) \
@@ -125,14 +125,16 @@ def transform_user_activity_count(data, topic="page_view_events"):
    
     return transformed_data
 
-def transform_user_data(data, topic="auth_events"):
+def transform_gender_distribution_minute(data, topic="auth_events"):
     transformed_data = data.selectExpr("CAST(value as String)") \
         .select(func.from_json(func.col("value"), schema[topic]).alias("value")) \
         .select(func.col("value.*")) \
-        .withColumn("registration", (func.col("registration")/1000).cast("timestamp")) \
-        .select("userId", "lastName", "firstName", "gender", "level", "registration") \
-        .dropna(how="any")
-    
+        .withColumn("ts", (func.col("ts")/1000).cast("timestamp")) \
+        .withWatermark("ts", "0 seconds") \
+        .groupBy("gender", "level", func.window("ts", "1 minute", "1 minute")) \
+        .count() \
+        .withColumn("ingest_ts", func.col("window.start")) \
+        .select("gender", "level", "count", "ingest_ts")
     return transformed_data
 
 def write_to_hdfs(data, topic, processingTime):    
@@ -149,14 +151,15 @@ def write_to_hdfs(data, topic, processingTime):
 def write_to_cassandra(data, table, processingTime):
     stream = data.writeStream \
         .format("org.apache.spark.sql.cassandra") \
-        .option("checkpointLocation", "/tmp/chechpint/{}".format(table)) \
+        .option("checkpointLocation", "/tmp/checkpoint/{}".format(table)) \
         .options(table=table, keyspace="music_streaming") \
         .trigger(processingTime=processingTime) \
         .outputMode("append") \
         
     return stream
 
-    
+
+# For debugging    
 def write_to_console(data, processingTime):
             
     stream = data.writeStream \
@@ -214,8 +217,8 @@ if __name__ == '__main__':
     auth_events_hdfs = transform_data(auth_events, "auth_events")
     auth_events_hdfs = write_to_hdfs(auth_events_hdfs, "auth_events", "1 minute")
 
-    user_auth = transform_user_data(auth_events, topic="auth_events")
-    user_auth = write_to_cassandra(user_auth, "user_auth", "1 minute")
+    gender_distribution = transform_gender_distribution_minute(auth_events, topic="auth_events")
+    gender_distribution = write_to_cassandra(gender_distribution, "gender_distribution_minute", "1 minute")
 
     # Process Stream Page View Events
     page_view_events = readstream_from_kafka(spark, "page_view_events")
@@ -226,12 +229,19 @@ if __name__ == '__main__':
     user_activity_minute = write_to_cassandra(user_activity_minute, "user_activity_minute", "1 minute")
     
     
+    # Start streaming to cassandra
     listen_count_minute.start()
     song_chart_minute.start()
     artist_chart_minute.start()
     
     user_activity_minute.start()
-    user_auth.start()
+    gender_distribution.start()
+    
+    # Start streaming to hdfs
+    # listen_events_hdfs.start()
+    # auth_events_hdfs.start()
+    # page_view_events_hdfs.start()
+    
     
     spark.streams.awaitAnyTermination()
 

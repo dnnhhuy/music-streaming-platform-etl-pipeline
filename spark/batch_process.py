@@ -13,11 +13,11 @@ spark = SparkSession.builder \
 
 listen_events_df = spark.read \
                     .format("parquet") \
-                    .load("hdfs://namenode:8020/data/listen_events")
-                     
+                    .load("hdfs://namenode:9000/data/listen_events")
 
-listen_events_df = listen_events_df.groupBy("song").count().sort(func.desc(func.col("count")))
+auth_events_df = spark.read \
+                    .format("parquet") \
+                    .load("hdfs://namenode:9000/data/listen_events")
 
-listen_events_df.show()
 
 spark.stop()
