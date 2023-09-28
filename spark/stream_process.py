@@ -1,11 +1,7 @@
 from streaming_processor import Streaming_Processor
 
 if __name__ == '__main__':
-    
-    # Initialize Spark
     spark = Streaming_Processor()
-
-    
     # Process Stream Listen Events
     listen_events = spark.extract_from_kafka("listen_events")
     listen_events_hdfs = spark.transform_data(listen_events, "listen_events")

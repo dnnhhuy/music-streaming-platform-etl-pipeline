@@ -5,15 +5,16 @@ from pyspark.sql.types import *
 from pyspark import SparkConf
 
 
-def fix_string(str):
-    if str: 
-        str = str.encode("latin-1") \
-            .decode("unicode-escape") \
-            .encode("latin-1") \
-            .decode("utf-8") \
-            .strip('\"')
-    return str
 
+def fix_string(str):
+        if str: 
+            str = str.encode("latin-1") \
+                .decode("unicode-escape") \
+                .encode("latin-1") \
+                .decode("utf-8") \
+                .strip('\"')
+        return str
+    
 class Streaming_Processor():
     def __init__(self) -> None:
         conf = SparkConf()
@@ -44,7 +45,7 @@ class Streaming_Processor():
         return data
 
     
-
+    
 
     def transform_data(self, data, topic):
         
