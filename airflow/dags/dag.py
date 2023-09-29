@@ -7,6 +7,9 @@ from airflow.operators.bash import BashOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.providers.apache.hive.operators.hive import HiveOperator
 from create_conn import create_essential_conn
+
+
+
 default_args = {
     'owner': 'airflow',
     'depends_on_past': True,
@@ -25,26 +28,19 @@ with DAG(
 	schedule_interval="*/30 * * * *",
     catchup=False) as dag:
     
-    # op0 = PythonOperator(
-    #     task_id="create_connection",
-    #     python_callable=create_essential_conn
-    # )
-    # op1 = SparkSubmitOperator(
-    #     conn_id="spark_conn",
-    #     task_id= "batch_etl",
-    #     application="batch_etl.py",
-    #     verbose=True,
-    #     dag=dag
-    # )
-    # op1 = BashOperator(
-    #     task_id = 'batch_etl',
-    #     bash_command="python /opt/airflow/dags/batch_process.py"
-    # )
+    op0 = PythonOperator(
+        task_id="create_connection",
+        python_callable=create_essential_conn
+    )
     
-    # op1 = PythonOperator(
-    #     task_id="testing_dag",
-    #     python_callable=testing_dag
-    # )
+    op1 = SparkSubmitOperator(
+        conn_id="spark_conn",
+        task_id= "batch_etl",
+        application="dags/batch_etl.py",
+        verbose=True,
+        dag=dag
+    )
+
     # op2 = HiveOperator(
     #     task_id="create_database_tables",
     #     hive_cli_conn_id="hive_conn",
@@ -60,7 +56,6 @@ with DAG(
         dag=dag
     )
     
-
     start = EmptyOperator(task_id="start")
     end = EmptyOperator(task_id="end")  
-    start  >> op2 >> end
+    start  >> op0 >> op1 >> op2 >> end

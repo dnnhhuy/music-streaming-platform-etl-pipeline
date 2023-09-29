@@ -17,7 +17,7 @@ class Batch_Processor():
 
 
         self.spark.sparkContext.setLogLevel("ERROR")
-        self.spark.sparkContext.addPyFile("/opt/airflow/dags/batch_processor.py")
+        self.spark.sparkContext.addPyFile("/opt/airflow/dags/spark/spark_batch_processor.py")
     
     def extract_data(self, topic):
         df = self.spark.read \
