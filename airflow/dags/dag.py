@@ -5,7 +5,6 @@ from airflow.operators.python import PythonOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.bash import BashOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
-from airflow.providers.apache.hive.operators.hive import HiveOperator
 from create_conn import create_essential_conn
 
 
@@ -21,41 +20,38 @@ default_args = {
     'retry_delay': timedelta(minutes=1)
 }
 
-with DAG(
+dag =  DAG(
     dag_id='testing_dag',
     default_args=default_args,
     max_active_runs=1,
 	schedule_interval="*/30 * * * *",
-    catchup=False) as dag:
+    catchup=False)
     
-    op0 = PythonOperator(
-        task_id="create_connection",
-        python_callable=create_essential_conn
-    )
-    
-    op1 = SparkSubmitOperator(
-        conn_id="spark_conn",
-        task_id= "batch_etl",
-        application="dags/batch_etl.py",
-        verbose=True,
-        dag=dag
-    )
+op0 = PythonOperator(
+    task_id="create_connection",
+    python_callable=create_essential_conn,
+    dag=dag
+)
 
-    # op2 = HiveOperator(
-    #     task_id="create_database_tables",
-    #     hive_cli_conn_id="hive_conn",
-    #     hql="hql/create_database_tables.hql",
-    #     dag=dag
-    # )
-    
-    op2 = BashOperator(
-        task_id="create_database_tables",
-        bash_command="beeline -u {{params.url}} -f {{params.script}}",
-        params={"url": "jdbc:hive2://hive-server2:10000",
-                "script": "/opt/airflow/dags/hql/create_database_tables.hql"},
-        dag=dag
-    )
-    
-    start = EmptyOperator(task_id="start")
-    end = EmptyOperator(task_id="end")  
-    start  >> op0 >> op1 >> op2 >> end
+op1 = SparkSubmitOperator(
+    conn_id="spark_conn",
+    task_id= "batch_etl",
+    application="dags/batch_etl.py",
+    verbose=True,
+    dag=dag
+)
+
+op2 = BashOperator(
+    task_id="create_database_tables",
+    bash_command="beeline -u {{params.url}} -f {{params.script}}",
+    params={"url": "jdbc:hive2://hive-server2:10000",
+            "script": "/opt/airflow/dags/hql/create_database_tables.hql"},
+    dag=dag
+)
+
+start = EmptyOperator(task_id="start", dag=dag)
+end = EmptyOperator(task_id="end", dag=dag)  
+start  >> op0 >> op1 >> op2 >> end
+
+if __name__ == "__main__":
+    dag.cli()
