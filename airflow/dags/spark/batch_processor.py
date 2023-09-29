@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark import SparkConf
 from pyspark.sql.types import *
 from pyspark.sql import functions as func
+from schema import schema
 
 class Batch_Processor():
     def __init__(self) -> None:
@@ -17,11 +18,14 @@ class Batch_Processor():
 
 
         self.spark.sparkContext.setLogLevel("ERROR")
-        self.spark.sparkContext.addPyFile("/opt/airflow/dags/spark/spark_batch_processor.py")
-    
+        self.spark.sparkContext.addPyFile("/opt/airflow/dags/spark/batch_processor.py")
+        self.spark.sparkContext.addPyFile("/opt/airflow/dags/spark/schema.py")
+        
+        
     def extract_data(self, topic):
         df = self.spark.read \
                 .format("parquet") \
+                .schema(schema[topic]) \
                 .option("path", "hdfs://namenode:9000/data/{}".format(topic)) \
                 .load()
         return df
@@ -159,10 +163,10 @@ class Batch_Processor():
                 "dim_location": dim_location}
 
 
-    def load_to_hdfs(self, data, filename):    
+    def load_to_hdfs(self, data, filename, mode):    
         stream = data.write \
             .format("parquet") \
-            .mode("overwrite") \
+            .mode(mode) \
             .option("path", "hdfs://namenode:9000/transformed_data/{}.parquet".format(filename)) \
             .save()
         return stream

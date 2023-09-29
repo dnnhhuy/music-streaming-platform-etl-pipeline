@@ -21,10 +21,10 @@ default_args = {
 }
 
 dag =  DAG(
-    dag_id='testing_dag',
+    dag_id='batch_etl_incremental_load',
     default_args=default_args,
     max_active_runs=1,
-	schedule_interval="*/30 * * * *",
+	schedule_interval="0 0 * * *",
     catchup=False)
     
 op0 = PythonOperator(
@@ -35,8 +35,8 @@ op0 = PythonOperator(
 
 op1 = SparkSubmitOperator(
     conn_id="spark_conn",
-    task_id= "batch_etl",
-    application="dags/batch_etl.py",
+    task_id= "batch_etl_incremental_load",
+    application="dags/spark/batch_etl_incremental_load.py",
     verbose=True,
     dag=dag
 )
