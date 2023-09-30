@@ -10,8 +10,13 @@ def batch_etl(processor):
     # Extract data
     listen_events_df = processor.extract_data("listen_events")
     auth_events_df = processor.extract_data("auth_events")
-    page_view_events_df = processor.extract_data("page_view_events")
+    page_view_events_df = processor.extract_data("page_view_events") \
+            .withColumn("registration", func.when(func.col("registration").isNotNull(), func.col("registration")).otherwise(func.lit("empty"))) \
+            .na.fill(0.0, subset=["duration"]) \
+            .na.fill(0, subset=["userId"]) \
+            .na.fill("empty")
     
+    page_view_events_df.show(100, truncate=False)
     
     # Transform data
     listen_events_df = processor.transform_listen_events(listen_events_df)
