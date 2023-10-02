@@ -24,7 +24,7 @@ create external table if not exists dim_song (
     song_id string,
     title string,
     artist string,
-    duration float
+    duration double
 )
 stored as parquet location 'hdfs://namenode:9000/transformed_data/dim_song.parquet';
 
@@ -44,7 +44,7 @@ create external table if not exists dim_user (
     firstName string,
     gender string,
     level string,
-    registration timestamp
+    registration string
 )
 stored as parquet location 'hdfs://namenode:9000/transformed_data/dim_user.parquet';
 
