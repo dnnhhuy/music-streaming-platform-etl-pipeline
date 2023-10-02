@@ -13,10 +13,9 @@ def batch_etl(processor):
     page_view_events_df = processor.extract_data("page_view_events") \
             .withColumn("registration", func.when(func.col("registration").isNotNull(), func.col("registration")).otherwise(func.lit("empty"))) \
             .na.fill(0.0, subset=["duration"]) \
+            .withColumn("userId", func.col("userId") + 2) \
             .withColumn("userId", func.coalesce(func.col("userId"), func.when(func.col("level")=="free", 0).otherwise("1"))) \
-            .na.fill("empty")
-    
-    page_view_events_df.show(100, truncate=False)
+            .na.fill("empty").cache()
     
     # Transform data
     listen_events_df = processor.transform_listen_events(listen_events_df)

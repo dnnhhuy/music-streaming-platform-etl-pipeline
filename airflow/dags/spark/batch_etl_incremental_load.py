@@ -15,7 +15,12 @@ def batch_etl(processor):
     # Transform data
     listen_events_df = processor.transform_listen_events(listen_events_df)
     auth_events_df = processor.transform_auth_events(auth_events_df)
-    page_view_events_df = processor.transform_page_view_events(page_view_events_df)
+    page_view_events_df = processor.transform_page_view_events(page_view_events_df) \
+            .withColumn("registration", func.when(func.col("registration").isNotNull(), func.col("registration")).otherwise(func.lit("empty"))) \
+            .na.fill(0.0, subset=["duration"]) \
+            .withColumn("userId", func.col("userId") + 2) \
+            .withColumn("userId", func.coalesce(func.col("userId"), func.when(func.col("level")=="free", 0).otherwise("1"))) \
+            .na.fill("empty").cache()
     
     dim_time = unionAll([listen_events_df["dim_time"], auth_events_df["dim_time"], page_view_events_df["dim_time"]]) \
                 .distinct() \
