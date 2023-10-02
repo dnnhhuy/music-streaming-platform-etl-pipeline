@@ -175,8 +175,10 @@ class Streaming_Processor():
         return transformed_data
     
     def load_to_hdfs(self, data, topic, processingTime):    
-        stream = data.writeStream \
+        stream = data.withColumn("date", func.to_date(func.col("ts"))) \
+            .writeStream \
             .format("parquet") \
+            .partitionBy("date") \
             .outputMode("append") \
             .option("path", "hdfs://namenode:9000/data/{}".format(topic)) \
             .option("checkpointLocation", "hdfs://namenode:9000/checkpoint/{}".format(topic)) \

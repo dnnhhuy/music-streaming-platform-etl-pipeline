@@ -2,6 +2,9 @@ from pyspark.sql import SparkSession
 from pyspark import SparkConf
 from pyspark.sql.types import *
 from pyspark.sql import functions as func
+from datetime import date, timedelta
+import sys
+sys.path.append("/opt/airflow/dags/spark/")
 from schema import schema
 
 class Batch_Processor():
@@ -21,13 +24,36 @@ class Batch_Processor():
         self.spark.sparkContext.addPyFile("/opt/airflow/dags/spark/batch_processor.py")
         self.spark.sparkContext.addPyFile("/opt/airflow/dags/spark/schema.py")
         
-        
-    def extract_data(self, topic):
-        df = self.spark.read \
-                .format("parquet") \
-                .schema(schema[topic]) \
-                .option("path", "hdfs://namenode:9000/data/{}".format(topic)) \
-                .load()
+    
+    def path_exists(self, path):
+        # spark is a SparkSession
+        sc = self.spark.sparkContext
+        fs = sc._jvm.org.apache.hadoop.fs.FileSystem.get(
+                sc._jvm.java.net.URI.create(path),
+                sc._jsc.hadoopConfiguration(),
+        )
+        return fs.exists(sc._jvm.org.apache.hadoop.fs.Path(path))
+    
+    def extract_data(self, topic, mode):
+        if mode == "full":
+            df = self.spark.read \
+                    .format("parquet") \
+                    .option("path", "hdfs://namenode:9000/data/{}".format(topic)) \
+                    .load()
+        elif mode == "incremental":
+            date_param = date.today() - timedelta(days=1)
+            path = "hdfs://namenode:9000/data/{}/date={}".format(topic, date_param)
+            if self.path_exists(path):
+                df = self.spark.read \
+                        .format("parquet") \
+                        .option("path", path) \
+                        .load()
+            else:
+                df = self.spark.createDataFrame([], schema[topic])
+        else:
+            print('Mode "{}" does not support'.format(mode))
+            df = self.spark.createDataFrame([], schema[topic])
+            
         return df
 
 
@@ -62,13 +88,6 @@ class Batch_Processor():
             .dropDuplicates() \
             .na.drop(how="any") \
             
-        # fact_listen = df.join(dim_time, (df["hour"] == dim_time["hour"]) & (df["minute"] == dim_time["minute"]) & (df["second"] == dim_time["second"]), "inner") \
-        #     .join(dim_date, (df["day"] == dim_date["day"]) & (df["dayOfWeek"] == dim_date["dayOfWeek"]) & (df["week"] == dim_date["week"]) & (df["month"] == dim_date["month"]) & (df["year"] == dim_date["year"]) & (df["quarter"] == dim_date["quarter"]), "inner") \
-        #     .join(dim_song, (df["song"] == dim_song["title"]) & (df["artist"] == dim_song["artist"]) & (df["duration"] == dim_song["duration"]), "inner") \
-        #     .join(dim_user, df["userId"] == dim_user["userId"], "inner").drop(df.userId) \
-        #     .join(dim_location, (df["city"] == dim_location["city"]) & (df["zip"] == dim_location["zip"]) & (df["state"] == dim_location["state"]) & (df["lon"] == dim_location["lon"]) & (df["lat"] == dim_location["lat"]), "inner") \
-        #     .select("time_id", "date_id", "song_id", func.col("userId"), "location_id", "sessionId", "itemInSession", "auth", "userAgent")
-        
         return {"listen_events_df": transformed_df,
                 "dim_time": dim_time,
                 "dim_date": dim_date,
@@ -108,13 +127,6 @@ class Batch_Processor():
             .dropDuplicates() \
             .na.drop(how="any") \
             
-        # fact_page_view = df.join(dim_time, (df["hour"] == dim_time["hour"]) & (df["minute"] == dim_time["minute"]) & (df["second"] == dim_time["second"]), "inner") \
-        #     .join(dim_date, (df["day"] == dim_date["day"]) & (df["dayOfWeek"] == dim_date["dayOfWeek"]) & (df["week"] == dim_date["week"]) & (df["month"] == dim_date["month"]) & (df["year"] == dim_date["year"]) & (df["quarter"] == dim_date["quarter"]), "inner") \
-        #     .join(dim_song, (df["song"] == dim_song["title"]) & (df["artist"] == dim_song["artist"]) & (df["duration"] == dim_song["duration"]), "inner") \
-        #     .join(dim_user, df["userId"] == dim_user["userId"], "inner").drop(df.userId) \
-        #     .join(dim_location, (df["city"] == dim_location["city"]) & (df["zip"] == dim_location["zip"]) & (df["state"] == dim_location["state"]) & (df["lon"] == dim_location["lon"]) & (df["lat"] == dim_location["lat"]), "inner") \
-        #     .select("time_id", "date_id", "song_id", 'userId', "location_id", "sessionId", "itemInSession", "page", "auth", "method", "status", "userAgent") \
-        
         return {"page_view_events_df": transformed_df,
                 "dim_time": dim_time,
                 "dim_date": dim_date,
@@ -150,12 +162,6 @@ class Batch_Processor():
             .dropDuplicates() \
             .na.drop(how="any") \
             
-        # fact_auth = df.join(dim_time, (df["hour"] == dim_time["hour"]) & (df["minute"] == dim_time["minute"]) & (df["second"] == dim_time["second"]), "inner") \
-        #     .join(dim_date, (df["day"] == dim_date["day"]) & (df["dayOfWeek"] == dim_date["dayOfWeek"]) & (df["week"] == dim_date["week"]) & (df["month"] == dim_date["month"]) & (df["year"] == dim_date["year"]) & (df["quarter"] == dim_date["quarter"]), "inner") \
-        #     .join(dim_user, df["userId"] == dim_user["userId"], "inner").drop(df.userId) \
-        #     .join(dim_location, (df["city"] == dim_location["city"]) & (df["zip"] == dim_location["zip"]) & (df["state"] == dim_location["state"]) & (df["lon"] == dim_location["lon"]) & (df["lat"] == dim_location["lat"]), "inner") \
-        #     .select("time_id", "date_id", 'userId', "location_id", "sessionId", "itemInSession", "userAgent", "success") \
-        
         return {"auth_events_df": transformed_df,
                 "dim_user": dim_user,
                 "dim_time": dim_time,

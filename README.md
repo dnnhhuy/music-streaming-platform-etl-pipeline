@@ -42,7 +42,7 @@ The schema includes:
 
 All dimension tables are conformed dimension which are used for multiple fact tables.
 
-The data model diagram is shown below:
+The data model diagram is shown as below:
 
 ![star-schema](images/star_schema.jpg)
 
@@ -56,4 +56,6 @@ Airflow is used to schedule, trigger 2 DAGs in this project:
 Example:
 
 ![dashboard](images/dashboard.jpg)
+
+## **Setup & Deployment**
 
