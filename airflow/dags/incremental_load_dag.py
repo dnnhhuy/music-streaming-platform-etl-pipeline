@@ -40,7 +40,7 @@ wait_for_first_dag = ExternalTaskSensor(
     mode="reschedule",
     allowed_states=["success"],
     execution_date_fn=get_most_recent_dag_run,
-    timeout=900,
+    timeout=(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)) - datetime.now(),
     dag=dag
 )
 op0 = PythonOperator(

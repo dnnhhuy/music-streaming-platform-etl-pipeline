@@ -2,7 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark import SparkConf
 from pyspark.sql.types import *
 from pyspark.sql import functions as func
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import sys
 sys.path.append("/opt/airflow/dags/spark/")
 from schema import schema
