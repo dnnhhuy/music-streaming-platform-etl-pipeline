@@ -11,8 +11,8 @@ from create_conn import create_essential_conn
 
 default_args = {
     'owner': 'airflow',
-    'depends_on_past': True,
-    'start_date': days_ago(1),
+    'depends_on_past': False,
+    'start_date': datetime(2023, 1, 1),
     'email': ['airflow@example.com'],
     'email_on_failure': False,
     'email_on_retry': False,

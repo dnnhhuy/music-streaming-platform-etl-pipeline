@@ -20,8 +20,7 @@ schema  = {
         StructField("lastName", StringType(), True),
         StructField("firstName", StringType(), True),
         StructField("gender", StringType(), True),
-        StructField("registration", TimestampType(), True),
-        StructField("date", DateType(), True)
+        StructField("registration", TimestampType(), True)
     ]),
 
     "auth_events": StructType([
@@ -40,8 +39,7 @@ schema  = {
         StructField("firstName", StringType(), True),
         StructField("gender", StringType(), True),
         StructField("registration", TimestampType(), True),
-        StructField("success", BooleanType(), False),
-        StructField("date", DateType(), True)
+        StructField("success", BooleanType(), False)
     ]),
 
     "page_view_events": StructType([
@@ -66,8 +64,7 @@ schema  = {
         StructField("registration", TimestampType(), True),
         StructField("artist", StringType(), True),
         StructField("song", StringType(), True),
-        StructField("duration", DoubleType(), True),
-        StructField("date", DateType(), True)
+        StructField("duration", DoubleType(), True)
     ]),
     "status_change_events": StructType([
         StructField("ts", TimestampType(), True),
@@ -85,7 +82,6 @@ schema  = {
         StructField("lastName", StringType(), True),
         StructField("firstName", StringType(), True),
         StructField("gender", StringType(), True),
-        StructField("registration", TimestampType(), True),
-        StructField("date", DateType(), True)
+        StructField("registration", TimestampType(), True)
     ])
 }
