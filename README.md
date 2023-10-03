@@ -48,8 +48,8 @@ The data model diagram is shown as below:
 
 Orchestration:
 Airflow is used to schedule, trigger 2 DAGs in this project:
-* Full load DAG is scheduled in the first run of the project.
-* Incremental load DAG is scheduled new data to the data warehouse every midnight.
+* Full load DAG is scheduled in the first run of the project, data before the current day will be processed and load to data warehouse.
+* Incremental load DAG is scheduled to run the first time at the midnight in the day of the first dag ran, then it would be triggered to process the day before's data and store in the data warehouse.
 
 ## **Dashboard**
 

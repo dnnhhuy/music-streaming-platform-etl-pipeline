@@ -8,10 +8,11 @@ from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOpe
 from create_conn import create_essential_conn
 from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.models import DagRun
+import time
 
 default_args = {
     'owner': 'airflow',
-    'depends_on_past': False,
+    'depends_on_past': True,
     'start_date': datetime(2023, 1, 1),
     'email': ['airflow@example.com'],
     'email_on_failure': False,
@@ -40,9 +41,12 @@ wait_for_first_dag = ExternalTaskSensor(
     mode="reschedule",
     allowed_states=["success"],
     execution_date_fn=get_most_recent_dag_run,
-    timeout=(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)) - datetime.now(),
+    timeout=900,
     dag=dag
 )
+
+wait_for_first_dag.post_execute = lambda **x: time.sleep(((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)) - datetime.now()).seconds)
+
 op0 = PythonOperator(
     task_id="create_connection",
     python_callable=create_essential_conn,

@@ -8,9 +8,10 @@ def unionAll(dfs):
 
 def batch_etl(processor):
     # Extract data
-    listen_events_df = processor.extract_data("listen_events", "full")
-    auth_events_df = processor.extract_data("auth_events", "full")
-    page_view_events_df = processor.extract_data("page_view_events", "full") \
+    # Only extract data generated before current day
+    listen_events_df = processor.extract_data("listen_events", "full").filter(func.col("date") < func.to_date(func.current_date()))
+    auth_events_df = processor.extract_data("auth_events", "full").filter(func.col("date") < func.to_date(func.current_date()))
+    page_view_events_df = processor.extract_data("page_view_events", "full").filter(func.col("date") < func.to_date(func.current_date())) \
             .withColumn("registration", func.when(func.col("registration").isNotNull(), func.col("registration")).otherwise(func.lit("empty"))) \
             .na.fill(0.0, subset=["duration"]) \
             .withColumn("userId", func.col("userId") + 2) \
