@@ -1,6 +1,5 @@
 from airflow import DAG
 from datetime import datetime, timedelta
-from airflow.utils.dates import days_ago
 from airflow.operators.python import PythonOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.bash import BashOperator
@@ -9,17 +8,9 @@ from create_conn import create_essential_conn
 from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.models import DagRun
 import time
+import pendulum
+local_tz = pendulum.timezone("Asia/Ho_Chi_Minh")
 
-default_args = {
-    'owner': 'airflow',
-    'depends_on_past': True,
-    'start_date': datetime(2023, 1, 1),
-    'email': ['airflow@example.com'],
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=1)
-}
 
 def get_most_recent_dag_run(dt):
     dag_runs = DagRun.find(dag_id="batch_etl_full_load")
@@ -27,6 +18,17 @@ def get_most_recent_dag_run(dt):
     if dag_runs:
         return dag_runs[0].execution_date
     
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': True,
+    'start_date': datetime(2023, 1, 1, tzinfo=local_tz),
+    'email': ['airflow@example.com'],
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=1)
+}
+
 dag =  DAG(
     dag_id='batch_etl_incremental_load',
     default_args=default_args,
@@ -45,7 +47,7 @@ wait_for_first_dag = ExternalTaskSensor(
     dag=dag
 )
 
-wait_for_first_dag.post_execute = lambda **x: time.sleep(((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)) - datetime.now()).seconds)
+wait_for_first_dag.post_execute = lambda **x: time.sleep(abs(((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)) - datetime.now()).total_seconds()))
 
 op0 = PythonOperator(
     task_id="create_connection",
@@ -71,6 +73,8 @@ op2 = BashOperator(
 
 start = EmptyOperator(task_id="start", dag=dag)
 end = EmptyOperator(task_id="end", dag=dag)  
+
+
 wait_for_first_dag >> start  >> op0 >> op1 >> op2 >> end
 
 if __name__ == "__main__":

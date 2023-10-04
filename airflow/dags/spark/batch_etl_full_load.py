@@ -17,10 +17,6 @@ def batch_etl(processor):
             .withColumn("userId", func.col("userId") + 2) \
             .withColumn("userId", func.coalesce(func.col("userId"), func.when(func.col("level")=="free", 0).otherwise("1"))) \
             .na.fill("empty").cache()
-            
-            
-    listen_events_df.show(10, truncate=False)
-    print(listen_events_df.count())
     
     # Transform data
     listen_events_dict = processor.transform_listen_events(listen_events_df)
