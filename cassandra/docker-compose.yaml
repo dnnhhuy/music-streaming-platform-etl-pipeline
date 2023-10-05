@@ -23,8 +23,7 @@ services:
       CASSANDRA_SEEDS: "cassandra-1,cassandra-2"
       MAX_HEAP_SIZE: 256M
       HEAP_NEWSIZE: 128M
-    networks:
-      - music_streaming_event_default
+    restart: unless-stopped
   
   cassandra-2:
     image: cassandra:4.0.1
@@ -44,8 +43,7 @@ services:
       HEAP_NEWSIZE: 128M
     depends_on:
       - cassandra-1
-    networks:
-      - music_streaming_event_default
+    restart: unless-stopped
     
 
   cassandra-load-keyspace:
@@ -58,15 +56,8 @@ services:
         condition: service_healthy
     working_dir: /cassandra
     volumes:
-      - ./scripts/:/cassandra
+      - ./cassandra/scripts/:/cassandra
     command: /bin/bash -c "echo loading cassandra keyspace && sh ./initialize_schema.sh"
-    networks:
-      - music_streaming_event_default
-
-
-networks:
-  music_streaming_event_default:
-    external: True
   
 volumes:
   cassandra-data-1:

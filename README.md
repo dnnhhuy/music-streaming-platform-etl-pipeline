@@ -59,3 +59,7 @@ Example:
 
 ## **Setup & Deployment**
 
+### Setup
+```
+chmod +x *.sh
+```

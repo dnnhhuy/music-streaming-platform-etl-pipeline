@@ -1,18 +1,18 @@
 from airflow import DAG
 from datetime import datetime, timedelta
-from airflow.utils.dates import days_ago
 from airflow.operators.python import PythonOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.bash import BashOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from create_conn import create_essential_conn
+import pendulum
 
-
+local_tz = pendulum.timezone("Asia/Ho_Chi_Minh")
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2023, 1, 1),
+    'start_date': datetime(2023, 1, 1, tzinfo=local_tz),
     'email': ['airflow@example.com'],
     'email_on_failure': False,
     'email_on_retry': False,

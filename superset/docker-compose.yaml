@@ -2,9 +2,7 @@ version: '3'
 
 services:
   superset:
-    build:
-      context: ./
-      dockerfile: Dockerfile
+    image: superset:latest
     container_name: superset
     environment:
       - ADMIN_USERNAME=admin
@@ -12,11 +10,6 @@ services:
       - ADMIN_PASSWORD=admin
     ports:
       - '8089:8088'
-    networks:
-      - music_streaming_event_default
     volumes:
-      - ./dashboard_data/:/app/superset_home/
-  
-networks:
-  music_streaming_event_default:
-    external: True
+      - ./superset/dashboard_data/:/app/superset_home/
+    restart: unless-stopped

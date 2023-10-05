@@ -43,7 +43,7 @@ wait_for_first_dag = ExternalTaskSensor(
     mode="reschedule",
     allowed_states=["success"],
     execution_date_fn=get_most_recent_dag_run,
-    timeout=900,
+    timeout=3600,
     dag=dag
 )
 

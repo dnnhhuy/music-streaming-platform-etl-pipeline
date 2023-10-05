@@ -50,7 +50,7 @@ x-airflow-common:
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: airflow-spark:latest  #${AIRFLOW_IMAGE_NAME:-apache/airflow:2.7.1}
+  image: ${AIRFLOW_IMAGE_NAME:-airflow-spark:latest}
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
@@ -72,11 +72,12 @@ x-airflow-common:
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     TZ: Asia/Ho_Chi_Minh
+  env_file: ./airflow/.env
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
-    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
-    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR:-./airflow/}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-./airflow/}/logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-./airflow/}/config:/opt/airflow/config
+    - ${AIRFLOW_PROJ_DIR:-./airflow/}/plugins:/opt/airflow/plugins
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -84,12 +85,12 @@ x-airflow-common:
       condition: service_healthy
     postgres:
       condition: service_healthy
-  networks: &network
-    - music_streaming_event_default
 
 services:
   postgres:
     image: postgres:13
+    container_name: postgres
+    hostname: postgres
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
@@ -101,11 +102,12 @@ services:
       interval: 10s
       retries: 5
       start_period: 5s
-    restart: always
-    networks: *network
+    restart: unless-stopped
 
   redis:
     image: redis:latest
+    container_name: redis
+    hostname: redis
     expose:
       - 6379
     healthcheck:
@@ -114,8 +116,7 @@ services:
       timeout: 30s
       retries: 50
       start_period: 30s
-    restart: always
-    networks: *network
+    restart: unless-stopped
 
   airflow-webserver:
     <<: *airflow-common
@@ -129,7 +130,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always
+    restart: unless-stopped
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -145,7 +146,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always
+    restart: unless-stopped
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -169,7 +170,7 @@ services:
       # Required to handle warm shutdown of the celery workers properly
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
       DUMB_INIT_SETSID: "0"
-    restart: always
+    restart: unless-stopped
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -185,7 +186,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always
+    restart: unless-stopped
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -268,7 +269,7 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}:/sources
+      - ${AIRFLOW_PROJ_DIR:-./airflow/}:/sources
 
   airflow-cli:
     <<: *airflow-common
@@ -300,7 +301,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always
+    restart: unless-stopped
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -308,7 +309,3 @@ services:
 
 volumes:
   postgres-db-volume:
-
-networks:
-  music_streaming_event_default:
-    external: True

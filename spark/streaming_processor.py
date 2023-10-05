@@ -38,6 +38,7 @@ class Streaming_Processor():
     def extract_from_kafka(self, topic):
         data = self.spark.readStream \
         .format("kafka") \
+        .option("failOnDataLoss", "false") \
         .option("kafka.bootstrap.servers", "kafka:9092") \
         .option("subscribe", topic) \
         .option("startingOffsets", "latest") \

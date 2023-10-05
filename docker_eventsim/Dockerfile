@@ -6,6 +6,7 @@ RUN set -ex; \
   mkdir -p /opt/eventsim
 
 WORKDIR /opt/eventsim
+ENV TZ=Asia/Ho_Chi_Minh
 
 COPY eventsim.sh /opt/eventsim/eventsim.sh
 COPY examples /opt/eventsim/examples
