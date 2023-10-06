@@ -29,7 +29,7 @@ class Streaming_Processor():
         self.spark = SparkSession.builder \
             .master("spark://spark-master:7077") \
             .config(conf=conf) \
-            .appName("KafkaConsumer").getOrCreate()
+            .appName("StreamingProcess").getOrCreate()
             
         self.spark.sparkContext.setLogLevel("ERROR")
         self.spark.sparkContext.addPyFile("/src/streaming_processor.py")

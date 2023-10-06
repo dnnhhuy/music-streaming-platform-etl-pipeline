@@ -1,8 +1,18 @@
 # **Music Event Data Pipeline**
+## **Overview**
 The main purpose of the project is building a data pipeline which is using various tools for processing data such as Kafka, Spark, Airflow, Hadoop, etc. 
 
-## **Overview**
-
+This project is building a data pipeline to process events se
+## **Tools & Technology**
+- Hadoop
+- Docker
+- Apache Spark
+- Apache Kafka
+- Cassandra
+- Hive
+- Apache Airflow
+- Apache Superset
+- Language: Python
 
 ## **Data**
 [Eventsim](https://github.com/Interana/eventsim) is the main data sources being used to generates events that simulates from a music streaming platform. The generated data based on user interaction on pages, user authentication and user listening events. 
