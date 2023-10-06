@@ -69,7 +69,32 @@ Example:
 
 ## **Setup & Deployment**
 
+### Prerequisites
+- Docker
+
 ### Setup
-```
-chmod +x *.sh
-```
+I prepared few scripts to setup and start the project automatically. In order to setup this project, the following steps are required for the project to be successfully executed.
+
+* Firstly, you need to gain permission for shell scripts by using the following command:
+    ```
+    chmod +x *.sh
+    ```
+
+* Then run the following command to setup required images and containers:
+    ```
+    ./setup.sh
+    ```
+    This function is downloading/buidling required images, then creating containers for services used in this project. </br>
+    
+    **Warning:** Because there are bunch of containers is going to be created, make sure you have enough available memory on your computer to successfully startup these containers.
+
+* In order to start processing streaming and batch events, use this script:
+    ```
+    ./startup.sh
+    ```
+    This script create ETL pipeline for processing streaming and batch data.
+
+* To shut down the project, use this command:
+    ```
+    ./shutdown.sh
+    ```
