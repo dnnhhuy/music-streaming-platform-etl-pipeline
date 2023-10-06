@@ -98,3 +98,14 @@ I prepared few scripts to setup and start the project automatically. In order to
     ```
     ./shutdown.sh
     ```
+
+* Running services can be accessible at following these sites:
+    * Spark Web UI: http://localhost:8080
+    * HDFS Web UI: http://localhost:9870
+    * Airflow Web Server: http://localhost:8083
+        * username: airflow
+        * password: airflow
+    * Superset Web UI: http://localhost:8089
+        * username: admin
+        * password: admin
+    * Presto: http://localhost:8082
