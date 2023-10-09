@@ -1,0 +1,125 @@
+from pyspark.sql.types import *
+
+schema  = {
+    "listen_events": StructType([
+        StructField("artist", StringType(), True),
+        StructField("song", StringType(), True),
+        StructField("duration", DoubleType(), True),
+        StructField("ts", TimestampType(), True),
+        StructField("sessionId", LongType(), True),
+        StructField("auth", StringType(), True),
+        StructField("level", StringType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("city", StringType(), True),
+        StructField("zip", StringType(), True),
+        StructField("state", StringType(), True),
+        StructField("userAgent", StringType(), True),
+        StructField("lon", DoubleType(), True),
+        StructField("lat", DoubleType(), True),
+        StructField("userId", LongType(), True),
+        StructField("lastName", StringType(), True),
+        StructField("firstName", StringType(), True),
+        StructField("gender", StringType(), True),
+        StructField("registration", TimestampType(), True)
+    ]),
+
+    "auth_events": StructType([
+        StructField("ts", TimestampType(), True),
+        StructField("sessionId", LongType(), True),
+        StructField("level", StringType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("city", StringType(), True),
+        StructField("zip", StringType(), True),
+        StructField("state", StringType(), True),
+        StructField("userAgent", StringType(), True),
+        StructField("lon", DoubleType(), True),
+        StructField("lat", DoubleType(), True),
+        StructField("userId", LongType(), True),
+        StructField("lastName", StringType(), True),
+        StructField("firstName", StringType(), True),
+        StructField("gender", StringType(), True),
+        StructField("registration", TimestampType(), True),
+        StructField("success", BooleanType(), True)
+    ]),
+
+    "page_view_events": StructType([
+        StructField("ts", TimestampType(), True),
+        StructField("sessionId", LongType(), True),
+        StructField("page", StringType(), True),
+        StructField("auth", StringType(), True),
+        StructField("method", StringType(), True),
+        StructField("status", IntegerType(), True),
+        StructField("level", StringType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("city", StringType(), True),
+        StructField("zip", StringType(), True),
+        StructField("state", StringType(), True),
+        StructField("userAgent", StringType(), True),
+        StructField("lon", DoubleType(), True),
+        StructField("lat", DoubleType(), True),
+        StructField("userId", LongType(), True),
+        StructField("lastName", StringType(), True),
+        StructField("firstName", StringType(), True),
+        StructField("gender", StringType(), True),
+        StructField("registration", TimestampType(), True),
+        StructField("artist", StringType(), True),
+        StructField("song", StringType(), True),
+        StructField("duration", DoubleType(), True)
+    ]),
+    "status_change_events": StructType([
+        StructField("ts", TimestampType(), True),
+        StructField("sessionId", LongType(), True),
+        StructField("auth", StringType(), True),
+        StructField("level", StringType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("city", StringType(), True),
+        StructField("zip", StringType(), True),
+        StructField("state", StringType(), True),
+        StructField("userAgent", StringType(), True),
+        StructField("lon", DoubleType(), True),
+        StructField("lat", DoubleType(), True),
+        StructField("userId", LongType(), True),
+        StructField("lastName", StringType(), True),
+        StructField("firstName", StringType(), True),
+        StructField("gender", StringType(), True),
+        StructField("registration", TimestampType(), True)
+    ]),
+    
+    "fact_listen": StructType([
+        StructField("time_id", StringType(), False),
+        StructField("date_id", StringType(), False),
+        StructField("song_id", StringType(), False),
+        StructField("userId", StringType(), False),
+        StructField("location_id", StringType(), False),
+        StructField("sessionId", LongType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("auth", StringType(), True),
+        StructField("userAgent", StringType(), True)
+    ]),
+    
+    "fact_auth": StructType([
+        StructField("time_id", StringType(), False),
+        StructField("date_id", StringType(), False),
+        StructField("userId", StringType(), False),
+        StructField("location_id", StringType(), False),
+        StructField("sessionId", LongType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("userAgent", StringType(), True),
+        StructField("success", BooleanType(), True)
+    ]),
+    
+    "fact_page_view": StructType([
+        StructField("time_id", StringType(), False),
+        StructField("date_id", StringType(), False),
+        StructField("song_id", StringType(), False),
+        StructField("userId", StringType(), False),
+        StructField("location_id", StringType(), False),
+        StructField("sessionId", LongType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("page", StringType(), True),
+        StructField("auth", StringType(), True),
+        StructField("method", StringType(), True),
+        StructField("status", StringType(), True),
+        StructField("userAgent", StringType(), True)
+    ])
+}

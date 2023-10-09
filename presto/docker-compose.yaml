@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  presto:
+    image: dnnhhuy/presto:0.283   
+    container_name: presto
+    hostname: presto
+    ports:
+    - 8082:8080
+    volumes:
+      - ./presto/etc:/opt/presto-server/etc/
+    restart: unless-stopped
