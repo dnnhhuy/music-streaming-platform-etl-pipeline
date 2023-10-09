@@ -99,7 +99,7 @@ I prepared few scripts to setup and start the project automatically. In order to
     ./shutdown.sh
     ```
 
-* Running services can be accessible at following these sites:
+* Running services can be directly accessible at following these sites:
     * Spark Web UI: http://localhost:8080
     * HDFS Web UI: http://localhost:9870
     * Airflow Web Server: http://localhost:8083

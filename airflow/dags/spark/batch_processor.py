@@ -6,6 +6,7 @@ from datetime import date, timedelta
 import sys
 sys.path.append("/opt/airflow/dags/spark/")
 from schema import schema
+import itertools
 
 class Batch_Processor():
     def __init__(self) -> None:
@@ -23,6 +24,7 @@ class Batch_Processor():
         self.spark.sparkContext.setLogLevel("ERROR")
         self.spark.sparkContext.addPyFile("/opt/airflow/dags/spark/batch_processor.py")
         self.spark.sparkContext.addPyFile("/opt/airflow/dags/spark/schema.py")
+        self.spark.sparkContext.addPyFile("/opt/airflow/dags/spark/utils.py")
         
     
     def path_exists(self, path):
@@ -56,7 +58,20 @@ class Batch_Processor():
             
         return df
 
+    def extract_star_schema(self, table):
+        df = self.spark.read \
+                    .format("parquet") \
+                    .option("path", "hdfs://namenode:9000/transformed_data/{}".format(table)) \
+                    .load()
+        return df
 
+    def create_dim_time(self):
+        time = [[x for x in range(24)], [x for x in range(60)], [x for x in range(60)]]
+        combination = itertools.product(*time)
+        df = self.spark.createDataframe(combination, ["hour", "minute", "second"]) \
+            .withColumn("time_id", func.expr("uuid()"))
+        return df
+        
     def transform_listen_events(self, df):
         transformed_df = df.withColumn("hour", func.hour("ts")) \
             .withColumn("minute", func.minute("ts")) \
@@ -67,10 +82,6 @@ class Batch_Processor():
             .withColumn("month", func.month(func.col("ts"))) \
             .withColumn("year", func.year(func.col("ts"))) \
             .withColumn("quarter", func.quarter(func.col("ts")))
-            
-        dim_time = transformed_df.select("hour", "minute", "second") \
-            .dropDuplicates() \
-            .na.drop(how="any") \
         
         dim_date = transformed_df.select("day", "dayOfWeek", "week", "month", "year", "quarter") \
             .dropDuplicates() \
@@ -89,7 +100,6 @@ class Batch_Processor():
             .na.drop(how="any") \
             
         return {"listen_events_df": transformed_df,
-                "dim_time": dim_time,
                 "dim_date": dim_date,
                 "dim_song": dim_song,
                 "dim_user": dim_user,
@@ -107,9 +117,6 @@ class Batch_Processor():
             .withColumn("year", func.year(func.col("ts"))) \
             .withColumn("quarter", func.quarter(func.col("ts")))
             
-        dim_time = transformed_df.select("hour", "minute", "second") \
-            .dropDuplicates() \
-            .na.drop(how="any") \
         
         dim_date = transformed_df.select("day", "dayOfWeek", "week", "month", "year", "quarter") \
             .dropDuplicates() \
@@ -128,7 +135,6 @@ class Batch_Processor():
             .na.drop(how="any") \
             
         return {"page_view_events_df": transformed_df,
-                "dim_time": dim_time,
                 "dim_date": dim_date,
                 "dim_song": dim_song,
                 "dim_user": dim_user,
@@ -145,10 +151,6 @@ class Batch_Processor():
             .withColumn("month", func.month(func.col("ts"))) \
             .withColumn("year", func.year(func.col("ts"))) \
             .withColumn("quarter", func.quarter(func.col("ts")))
-            
-        dim_time = transformed_df.select("hour", "minute", "second") \
-            .dropDuplicates() \
-            .na.drop(how="any") \
         
         dim_date = transformed_df.select("day", "dayOfWeek", "week", "month", "year", "quarter") \
             .dropDuplicates() \
@@ -164,7 +166,6 @@ class Batch_Processor():
             
         return {"auth_events_df": transformed_df,
                 "dim_user": dim_user,
-                "dim_time": dim_time,
                 "dim_date": dim_date,
                 "dim_location": dim_location}
 

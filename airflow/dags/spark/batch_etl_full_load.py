@@ -1,10 +1,6 @@
-import functools
 from batch_processor import Batch_Processor
 from pyspark.sql import functions as func
-
-
-def unionAll(dfs):
-    return functools.reduce(lambda df1, df2: df1.union(df2.select(df1.columns)), dfs)
+from utils import *
 
 def batch_etl(processor):
     # Extract data
@@ -23,21 +19,22 @@ def batch_etl(processor):
     auth_events_dict = processor.transform_auth_events(auth_events_df)
     page_view_events_dict = processor.transform_page_view_events(page_view_events_df)
     
-    dim_time = unionAll([listen_events_dict["dim_time"], auth_events_dict["dim_time"], page_view_events_dict["dim_time"]]) \
-                .distinct() \
-                .withColumn("time_id", func.expr("uuid()")) \
-                .cache()
+    dim_time = processor.create_dim_time().cache()
+    
     dim_date = unionAll([listen_events_dict["dim_date"], auth_events_dict["dim_date"], page_view_events_dict["dim_date"]]) \
                 .distinct() \
                 .withColumn("date_id", func.expr("uuid()")) \
                 .cache()
+                
     dim_user = unionAll([listen_events_dict["dim_user"], auth_events_dict["dim_user"], page_view_events_dict["dim_user"]]) \
                 .distinct() \
                 .cache()
+                
     dim_location = unionAll([listen_events_dict["dim_location"], auth_events_dict["dim_location"], page_view_events_dict["dim_location"]]) \
                 .distinct() \
                 .withColumn("location_id", func.expr("uuid()")) \
                 .cache()
+                
     dim_song = unionAll([listen_events_dict["dim_song"], page_view_events_dict["dim_song"]]) \
                 .distinct() \
                 .withColumn("song_id", func.expr("uuid()")) \

@@ -1,9 +1,6 @@
-import functools
 from batch_processor import Batch_Processor
 from pyspark.sql import functions as func
-
-def unionAll(dfs):
-    return functools.reduce(lambda df1, df2: df1.union(df2.select(df1.columns)), dfs)
+from utils import *
 
 def batch_etl(processor):
     # Extract data
@@ -15,32 +12,46 @@ def batch_etl(processor):
             .withColumn("userId", func.col("userId") + 2) \
             .withColumn("userId", func.coalesce(func.col("userId"), func.when(func.col("level")=="free", 0).otherwise("1"))) \
             .na.fill("empty").cache()
+            
+    dim_time = processor.extract_star_schema("dim_time").cache()
+    dim_date = processor.extract_star_schema("dim_date")
+    dim_user = processor.extract_star_schema("dim_user")
+    dim_location = processor.extract_star_schema("dim_location")
+    dim_song = processor.extract_star_schema("dim_song")
+    
+    fact_listen = processor.extract_star_schema("fact_listen")
+    fact_auth = processor.extract_star_schema("fact_auth")
+    fact_page_view = processor.extract_star_schema("fact_page_view")
     
     # Transform data
     listen_events_df = processor.transform_listen_events(listen_events_df)
     auth_events_df = processor.transform_auth_events(auth_events_df)
     page_view_events_df = processor.transform_page_view_events(page_view_events_df)
     
-    dim_time = unionAll([listen_events_df["dim_time"], auth_events_df["dim_time"], page_view_events_df["dim_time"]]) \
+    incremental_dim_date = unionAll([listen_events_df["dim_date"], auth_events_df["dim_date"], page_view_events_df["dim_date"]]) \
+                .substract(dim_date.select("day", "dayOfWeek", "week", "month", "year", "quarter")) \
                 .distinct() \
-                .withColumn("time_id", func.expr("uuid()")) \
-                .cache()
-    dim_date = unionAll([listen_events_df["dim_date"], auth_events_df["dim_date"], page_view_events_df["dim_date"]]) \
-                .distinct() \
-                .withColumn("date_id", func.expr("uuid()")) \
-                .cache()
-    dim_user = unionAll([listen_events_df["dim_user"], auth_events_df["dim_user"], page_view_events_df["dim_user"]]) \
-                .distinct() \
-                .cache()
-    dim_location = unionAll([listen_events_df["dim_location"], auth_events_df["dim_location"], page_view_events_df["dim_location"]]) \
-                .distinct() \
-                .withColumn("location_id", func.expr("uuid()")) \
-                .cache()
-    dim_song = unionAll([listen_events_df["dim_song"], page_view_events_df["dim_song"]]) \
-                .distinct() \
-                .withColumn("song_id", func.expr("uuid()")) \
-                .cache()
+                .withColumn("date_id", func.expr("uuid()"))
     
+    incremental_dim_user = unionAll([listen_events_df["dim_user"], auth_events_df["dim_user"], page_view_events_df["dim_user"]]) \
+                .substract(dim_user) \
+                .distinct()
+                
+    incremental_dim_location = unionAll([listen_events_df["dim_location"], auth_events_df["dim_location"], page_view_events_df["dim_location"]]) \
+                .substract(dim_location.select("city", "zip", "state", "lon", "lat")) \
+                .distinct() \
+                .withColumn("location_id", func.expr("uuid()"))
+                
+    incremental_dim_song = unionAll([listen_events_df["dim_song"], page_view_events_df["dim_song"]]) \
+                .substract(dim_song.select("title", "artist", "duration")) \
+                .distinct() \
+                .withColumn("song_id", func.expr("uuid()"))
+    
+    dim_date = unionAll([dim_date, incremental_dim_date]).cache()
+    dim_song = unionAll([dim_song, incremental_dim_song]).cache()
+    dim_location = unionAll([dim_location, incremental_dim_location]).cache()
+    dim_user = unionAll([dim_user, incremental_dim_user]).cache()
+        
     fact_listen = listen_events_df["listen_events_df"].join(dim_time, (listen_events_df["listen_events_df"]["hour"] == dim_time["hour"]) & (listen_events_df["listen_events_df"]["minute"] == dim_time["minute"]) & (listen_events_df["listen_events_df"]["second"] == dim_time["second"]), "inner") \
             .join(dim_date, (listen_events_df["listen_events_df"]["day"] == dim_date["day"]) & (listen_events_df["listen_events_df"]["dayOfWeek"] == dim_date["dayOfWeek"]) & (listen_events_df["listen_events_df"]["week"] == dim_date["week"]) & (listen_events_df["listen_events_df"]["month"] == dim_date["month"]) & (listen_events_df["listen_events_df"]["year"] == dim_date["year"]) & (listen_events_df["listen_events_df"]["quarter"] == dim_date["quarter"]), "inner") \
             .join(dim_song, (listen_events_df["listen_events_df"]["song"] == dim_song["title"]) & (listen_events_df["listen_events_df"]["artist"] == dim_song["artist"]) & (listen_events_df["listen_events_df"]["duration"] == dim_song["duration"]), "inner") \
@@ -66,11 +77,10 @@ def batch_etl(processor):
     processor.load_to_hdfs(fact_auth, "fact_auth", "append")
     processor.load_to_hdfs(fact_page_view, "fact_page_view", "append")
     
-    processor.load_to_hdfs(dim_date, "dim_date", "append")
-    processor.load_to_hdfs(dim_location, "dim_location", "append")
-    processor.load_to_hdfs(dim_song, "dim_song", "append")
-    processor.load_to_hdfs(dim_time, "dim_time", "append")
-    processor.load_to_hdfs(dim_user, "dim_user", "append")
+    processor.load_to_hdfs(incremental_dim_date, "dim_date", "append")
+    processor.load_to_hdfs(incremental_dim_location, "dim_location", "append")
+    processor.load_to_hdfs(incremental_dim_song, "dim_song", "append")
+    processor.load_to_hdfs(incremental_dim_user, "dim_user", "append")
     
 
 if __name__ == '__main__':
