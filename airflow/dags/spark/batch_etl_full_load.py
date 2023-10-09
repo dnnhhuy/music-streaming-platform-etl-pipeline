@@ -10,8 +10,7 @@ def batch_etl(processor):
     page_view_events_df = processor.extract_data("page_view_events", "full").filter(func.col("date") < func.to_date(func.current_date())) \
             .withColumn("registration", func.when(func.col("registration").isNotNull(), func.col("registration")).otherwise(func.lit("empty"))) \
             .na.fill(0.0, subset=["duration"]) \
-            .withColumn("userId", func.col("userId") + 2) \
-            .withColumn("userId", func.coalesce(func.col("userId"), func.when(func.col("level")=="free", 0).otherwise("1"))) \
+            .withColumn("userId", func.coalesce(func.col("userId"), func.when(func.col("level")=="free", "0").otherwise("1"))) \
             .na.fill("empty").cache()
             
     # Transform data
@@ -61,9 +60,9 @@ def batch_etl(processor):
             .select("time_id", "date_id", "song_id", 'userId', "location_id", "sessionId", "itemInSession", "page", "auth", "method", "status", "userAgent")
     
     # Load data to hdfs
-    processor.load_to_hdfs(fact_listen, "fact_listen", "overwrite")
-    processor.load_to_hdfs(fact_auth, "fact_auth", "overwrite")
-    processor.load_to_hdfs(fact_page_view, "fact_page_view", "overwrite")
+    processor.load_to_hdfs(fact_listen, "fact_listen", "overwrite", "date_id")
+    processor.load_to_hdfs(fact_auth, "fact_auth", "overwrite", "date_id")
+    processor.load_to_hdfs(fact_page_view, "fact_page_view", "overwrite", "date_id")
     
     processor.load_to_hdfs(dim_date, "dim_date", "overwrite")
     processor.load_to_hdfs(dim_location, "dim_location", "overwrite")

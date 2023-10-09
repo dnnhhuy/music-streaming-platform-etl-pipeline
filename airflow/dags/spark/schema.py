@@ -39,7 +39,7 @@ schema  = {
         StructField("firstName", StringType(), True),
         StructField("gender", StringType(), True),
         StructField("registration", TimestampType(), True),
-        StructField("success", BooleanType(), False)
+        StructField("success", BooleanType(), True)
     ]),
 
     "page_view_events": StructType([
@@ -83,5 +83,43 @@ schema  = {
         StructField("firstName", StringType(), True),
         StructField("gender", StringType(), True),
         StructField("registration", TimestampType(), True)
+    ]),
+    
+    "fact_listen": StructType([
+        StructField("time_id", StringType(), False),
+        StructField("date_id", StringType(), False),
+        StructField("song_id", StringType(), False),
+        StructField("userId", StringType(), False),
+        StructField("location_id", StringType(), False),
+        StructField("sessionId", LongType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("auth", StringType(), True),
+        StructField("userAgent", StringType(), True)
+    ]),
+    
+    "fact_auth": StructType([
+        StructField("time_id", StringType(), False),
+        StructField("date_id", StringType(), False),
+        StructField("userId", StringType(), False),
+        StructField("location_id", StringType(), False),
+        StructField("sessionId", LongType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("userAgent", StringType(), True),
+        StructField("success", BooleanType(), True)
+    ]),
+    
+    "fact_page_view": StructType([
+        StructField("time_id", StringType(), False),
+        StructField("date_id", StringType(), False),
+        StructField("song_id", StringType(), False),
+        StructField("userId", StringType(), False),
+        StructField("location_id", StringType(), False),
+        StructField("sessionId", LongType(), True),
+        StructField("itemInSession", IntegerType(), True),
+        StructField("page", StringType(), True),
+        StructField("auth", StringType(), True),
+        StructField("method", StringType(), True),
+        StructField("status", StringType(), True),
+        StructField("userAgent", StringType(), True)
     ])
 }

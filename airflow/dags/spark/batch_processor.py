@@ -7,6 +7,7 @@ import itertools
 import sys
 sys.path.append("/opt/airflow/dags/spark/")
 from schema import schema
+from utils import *
 
 class Batch_Processor():
     def __init__(self) -> None:
@@ -58,13 +59,38 @@ class Batch_Processor():
             
         return df
 
-    def extract_star_schema(self, table):
+    def extract_dimension(self, dimension):
         df = self.spark.read \
                     .format("parquet") \
-                    .option("path", "hdfs://namenode:9000/transformed_data/{}".format(table)) \
+                    .option("path", "hdfs://namenode:9000/transformed_data/{}.parquet".format(dimension)) \
                     .load()
         return df
-
+    
+    def extract_fact_table(self, fact_table, date_ids=[], full=False):
+        dfs = []
+        if full:
+            path = "hdfs://namenode:9000/transformed_data/{}.parquet".format(fact_table)
+            if self.path_exists(path):
+                df = self.spark.read \
+                        .format("parquet") \
+                        .option("path", path) \
+                        .load()
+                dfs.append(df)
+        else:
+            for date_id in date_ids:
+                path = "hdfs://namenode:9000/transformed_data/{}.parquet/date_id={}".format(fact_table, date_id)
+                if self.path_exists(path):
+                    df = self.spark.read \
+                            .format("parquet") \
+                            .option("path", path) \
+                            .load()
+                    df = df.withColumn("date_id", func.lit(date_id))
+                    dfs.append(df)
+        if len(dfs) == 0:
+            return self.spark.createDataFrame([], schema[fact_table])
+        else:
+            return unionAll(dfs)
+    
     def create_dim_time(self):
         time = [[x for x in range(24)], [x for x in range(60)], [x for x in range(60)]]
         combination = itertools.product(*time)
@@ -170,12 +196,20 @@ class Batch_Processor():
                 "dim_location": dim_location}
 
 
-    def load_to_hdfs(self, data, filename, mode):    
-        stream = data.write \
-            .format("parquet") \
-            .mode(mode) \
-            .option("path", "hdfs://namenode:9000/transformed_data/{}.parquet".format(filename)) \
-            .save()
+    def load_to_hdfs(self, data, filename, mode, partitionBy=None):    
+        if not partitionBy:
+            stream = data.write \
+                .format("parquet") \
+                .mode(mode) \
+                .option("path", "hdfs://namenode:9000/transformed_data/{}.parquet".format(filename)) \
+                .save()
+        else:
+            stream = data.write \
+                .format("parquet") \
+                .mode(mode) \
+                .partitionBy(partitionBy) \
+                .option("path", "hdfs://namenode:9000/transformed_data/{}.parquet".format(filename)) \
+                .save()
         return stream
     
     def stop(self):
