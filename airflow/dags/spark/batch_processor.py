@@ -3,10 +3,10 @@ from pyspark import SparkConf
 from pyspark.sql.types import *
 from pyspark.sql import functions as func
 from datetime import date, timedelta
+import itertools
 import sys
 sys.path.append("/opt/airflow/dags/spark/")
 from schema import schema
-import itertools
 
 class Batch_Processor():
     def __init__(self) -> None:
@@ -68,7 +68,7 @@ class Batch_Processor():
     def create_dim_time(self):
         time = [[x for x in range(24)], [x for x in range(60)], [x for x in range(60)]]
         combination = itertools.product(*time)
-        df = self.spark.createDataframe(combination, ["hour", "minute", "second"]) \
+        df = self.spark.createDataFrame(combination, ["hour", "minute", "second"]) \
             .withColumn("time_id", func.expr("uuid()"))
         return df
         

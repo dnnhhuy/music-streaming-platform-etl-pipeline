@@ -28,7 +28,7 @@ The generated data is sent to Kafka. Lamda architecture is used to handle for bo
 Data is extracted, transformed following specific purposes of visualization and stored in Cassandra for every minute. Presto is an intermediate distributed query engine for superset to interact with Cassandra.
 
 #### **Batch Process**: 
-Data is extracted, stored in Hadoop HDFS, transformed to **Star Schema**  and stored in Hive dataware house for Data Analysis to answer following questions:
+Data is extracted, partitioned by date and stored in Hadoop HDFS, transformed to **Star Schema**  and stored in Hive dataware house for Data Analysis to answer following questions:
 * "How many users that logged in?" in different granularity such as minute, second, hour, day, week, month, year.
 * "What is the top songs, artists?" in different granularity: minute, second, hour, day, week, month, year.
 * "What is the most location that listen on the platform the most?" in different granularity.
