@@ -54,7 +54,7 @@ op0 = PythonOperator(
 
 op1 = SparkSubmitOperator(
     conn_id="spark_conn",
-    task_id= "batch_etl_incremental_load",
+    task_id= "batch_etl",
     application="dags/spark/batch_etl_incremental_load.py",
     verbose=True,
     dag=dag
