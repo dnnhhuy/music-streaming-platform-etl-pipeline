@@ -5,10 +5,10 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.bash import BashOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from create_conn import create_essential_conn
-from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.models import DagRun
 import time
 import pendulum
+
 local_tz = pendulum.timezone("Asia/Ho_Chi_Minh")
 
 
@@ -36,18 +36,6 @@ dag =  DAG(
 	schedule_interval="0 0 * * *",
     catchup=False)
 
-wait_for_first_dag = ExternalTaskSensor(
-    task_id="wait_for_first_dag",
-    external_dag_id="batch_etl_full_load",
-    external_task_id="end",
-    mode="reschedule",
-    allowed_states=["success"],
-    execution_date_fn=get_most_recent_dag_run,
-    timeout=3600,
-    dag=dag
-)
-
-wait_for_first_dag.post_execute = lambda **x: time.sleep(abs(((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)) - datetime.now()).total_seconds()))
 
 op0 = PythonOperator(
     task_id="create_connection",
@@ -72,10 +60,12 @@ op2 = BashOperator(
 )
 
 start = EmptyOperator(task_id="start", dag=dag)
+start.pre_execute = lambda ** x: time.sleep(((datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)) - datetime.now()).total_seconds())
+
 end = EmptyOperator(task_id="end", dag=dag)  
 
 
-wait_for_first_dag >> start  >> op0 >> op1 >> op2 >> end
+start  >> op0 >> op1 >> op2 >> end
 
 if __name__ == "__main__":
     dag.cli()
