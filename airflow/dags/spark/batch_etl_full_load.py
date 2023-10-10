@@ -11,33 +11,33 @@ def batch_etl(processor):
             .withColumn("registration", func.when(func.col("registration").isNotNull(), func.col("registration")).otherwise(func.lit("empty"))) \
             .na.fill(0.0, subset=["duration"]) \
             .withColumn("userId", func.coalesce(func.col("userId"), func.when(func.col("level")=="free", "0").otherwise("1"))) \
-            .na.fill("empty").cache()
+            .na.fill("empty").persist()
             
     # Transform data
     listen_events_dict = processor.transform_listen_events(listen_events_df)
     auth_events_dict = processor.transform_auth_events(auth_events_df)
     page_view_events_dict = processor.transform_page_view_events(page_view_events_df)
     
-    dim_time = processor.create_dim_time().cache()
+    dim_time = processor.create_dim_time().persist()
     
     dim_date = unionAll([listen_events_dict["dim_date"], auth_events_dict["dim_date"], page_view_events_dict["dim_date"]]) \
                 .distinct() \
                 .withColumn("date_id", func.expr("uuid()")) \
-                .cache()
+                .persist()
                 
     dim_user = unionAll([listen_events_dict["dim_user"], auth_events_dict["dim_user"], page_view_events_dict["dim_user"]]) \
                 .distinct() \
-                .cache()
+                .persist()
                 
     dim_location = unionAll([listen_events_dict["dim_location"], auth_events_dict["dim_location"], page_view_events_dict["dim_location"]]) \
                 .distinct() \
                 .withColumn("location_id", func.expr("uuid()")) \
-                .cache()
+                .persist()
                 
     dim_song = unionAll([listen_events_dict["dim_song"], page_view_events_dict["dim_song"]]) \
                 .distinct() \
                 .withColumn("song_id", func.expr("uuid()")) \
-                .cache()
+                .persist()
     
     fact_listen = listen_events_dict["listen_events_df"].join(dim_time, (listen_events_dict["listen_events_df"]["hour"] == dim_time["hour"]) & (listen_events_dict["listen_events_df"]["minute"] == dim_time["minute"]) & (listen_events_dict["listen_events_df"]["second"] == dim_time["second"]), "inner") \
             .join(dim_date, (listen_events_dict["listen_events_df"]["day"] == dim_date["day"]) & (listen_events_dict["listen_events_df"]["dayOfWeek"] == dim_date["dayOfWeek"]) & (listen_events_dict["listen_events_df"]["week"] == dim_date["week"]) & (listen_events_dict["listen_events_df"]["month"] == dim_date["month"]) & (listen_events_dict["listen_events_df"]["year"] == dim_date["year"]) & (listen_events_dict["listen_events_df"]["quarter"] == dim_date["quarter"]), "inner") \
