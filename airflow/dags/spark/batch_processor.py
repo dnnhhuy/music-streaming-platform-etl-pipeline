@@ -15,6 +15,7 @@ class Batch_Processor():
         conf.set("spark.cores.max", 1)
         conf.set("spark.executor.memory", "2g")
         conf.set("spark.driver.memory", "2g")
+        conf.set("spark.sql.session.timeZone", "UTC")
         self.spark = SparkSession.builder \
                     .master("spark://spark-master:7077") \
                     .config(conf=conf) \
@@ -107,7 +108,7 @@ class Batch_Processor():
             .withColumn("week", func.weekofyear(func.col("ts"))) \
             .withColumn("month", func.month(func.col("ts"))) \
             .withColumn("year", func.year(func.col("ts"))) \
-            .withColumn("quarter", func.quarter(func.col("ts")))
+            .withColumn("quarter", func.quarter(func.col("ts"))).persist()
         
         dim_date = transformed_df.select("day", "dayOfWeek", "week", "month", "year", "quarter") \
             .dropDuplicates() \
@@ -141,7 +142,7 @@ class Batch_Processor():
             .withColumn("week", func.weekofyear(func.col("ts"))) \
             .withColumn("month", func.month(func.col("ts"))) \
             .withColumn("year", func.year(func.col("ts"))) \
-            .withColumn("quarter", func.quarter(func.col("ts")))
+            .withColumn("quarter", func.quarter(func.col("ts"))).persist()
             
         
         dim_date = transformed_df.select("day", "dayOfWeek", "week", "month", "year", "quarter") \
@@ -176,7 +177,7 @@ class Batch_Processor():
             .withColumn("week", func.weekofyear(func.col("ts"))) \
             .withColumn("month", func.month(func.col("ts"))) \
             .withColumn("year", func.year(func.col("ts"))) \
-            .withColumn("quarter", func.quarter(func.col("ts")))
+            .withColumn("quarter", func.quarter(func.col("ts"))).persist()
         
         dim_date = transformed_df.select("day", "dayOfWeek", "week", "month", "year", "quarter") \
             .dropDuplicates() \
