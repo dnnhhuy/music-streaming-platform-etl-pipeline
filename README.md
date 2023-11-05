@@ -4,8 +4,6 @@ The main purpose of the project is building a data pipeline which is using vario
 
 This project is building a data pipeline to process events sent from fake music streaming platform. The data would be processed through Lambda Architecture for both batch and streaming data. The project broken down into multiple micro services mantained by docker containers to be easily manageable.
 
-**Notice**: This project built on arm64 architecture. If you want to run on your machine which has different architect from arm64 - amd64 for instance, you can checkout the following changes:
-- airflow/Dockerfile: change JAVA HOME directory
 ## **Tools & Technology**
 - Hadoop
 - Docker
@@ -76,6 +74,9 @@ Example:
 - Docker
 
 ### Setup
+**Notice**: This project built on arm64 architecture. If you want to run on your machine which has different architect from arm64 - amd64 for instance, you can checkout the following changes:
+- airflow/Dockerfile: change JAVA HOME directory to amd64
+
 I prepared few scripts to setup and start the project automatically. In order to setup this project, the following steps are required for the project to be successfully executed.
 
 * Firstly, you need to gain permission for shell scripts by using the following command:
