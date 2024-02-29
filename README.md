@@ -4,8 +4,6 @@ The main purpose of the project is building a data pipeline which is using vario
 
 This project is building a data pipeline to process events sent from fake music streaming platform. The data would be processed through Lambda Architecture for both batch and streaming data. The project broken down into multiple micro services mantained by docker containers to be easily manageable.
 
-**Notice**: This project built on arm64 architecture. If you want to run on your machine which has different architect from arm64 - amd64 for instance, you can checkout the following changes:
-- airflow/Dockerfile: change JAVA HOME directory
 ## **Tools & Technology**
 - Hadoop
 - Docker
@@ -34,7 +32,11 @@ Data is extracted, transformed following specific purposes of visualization and 
 Data is extracted, partitioned by date and stored in Hadoop HDFS, transformed to **Star Schema**  and stored in Hive dataware house for Data Analysis to answer following questions:
 * "How many users that logged in?" in different granularity such as minute, second, hour, day, week, month, year.
 * "What are the top songs, artists?" in different granularity: minute, second, hour, day, week, month, year.
+<<<<<<< HEAD
 * "What is the most location that listen on the platform the most?" in different granularity.
+=======
+* What is the location that listen on the platform the most?
+>>>>>>> refs/remotes/origin/main
 * How many songs that has been played? in differnt granularity: minute, second, hour, day, week, month, year.
 * What is distribution of users based on genders, level?
 * What is average number of songs listened by users?
@@ -76,6 +78,9 @@ Example:
 - Docker
 
 ### Setup
+**Notice**: This project built on arm64 architecture. If you want to run on your machine which has different architect from arm64 - amd64 for instance, you can checkout the following changes:
+- airflow/Dockerfile: change JAVA HOME directory to amd64
+
 I prepared few scripts to setup and start the project automatically. In order to setup this project, the following steps are required for the project to be successfully executed.
 
 * Firstly, you need to gain permission for shell scripts by using the following command:
